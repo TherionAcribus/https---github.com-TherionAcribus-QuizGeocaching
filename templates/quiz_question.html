@@ -31,18 +31,6 @@
     </div>
     {% endif %}
 
-    {% if rule_set and rule_set.timer_seconds %}
-    <div class="quiz-timer" id="quiz-timer-{{ question.id }}">
-        <div class="timer-row">
-            <span class="timer-label">⏱ Temps restant:</span>
-            <span class="timer-value" id="timer-value-{{ question.id }}">{{ rule_set.timer_seconds }}s</span>
-        </div>
-        <div class="timer-bar">
-            <div class="timer-fill" id="timer-fill-{{ question.id }}" style="width: 100%"></div>
-        </div>
-    </div>
-    {% endif %}
-
     <!-- En-tête avec badges -->
     <div class="quiz-header">
         {% if question.theme %}
@@ -66,6 +54,18 @@
             {% endif %}
         </div>
     </div>
+
+    {% if rule_set and rule_set.timer_seconds %}
+    <div class="quiz-timer" id="quiz-timer-{{ question.id }}">
+        <div class="timer-row">
+            <span class="timer-label">⏱ Temps restant:</span>
+            <span class="timer-value" id="timer-value-{{ question.id }}">{{ rule_set.timer_seconds }}s</span>
+        </div>
+        <div class="timer-bar">
+            <div class="timer-fill" id="timer-fill-{{ question.id }}" style="width: 100%"></div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Grille des réponses -->
     {% set answers = question._shuffled_answers if question._shuffled_answers else question.possible_answers.split('|||') %}
@@ -175,6 +175,11 @@
 
     .timer-fill.critical {
         background: #ef4444;
+    }
+
+    .quiz-timer.timeout {
+        background: #fef2f2;
+        border-color: #ef4444;
     }
 
     .progress-info {
@@ -448,12 +453,43 @@
 
         .question-frame {
             padding: 1.5rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 0.75rem;
             min-height: 120px;
         }
 
         .quiz-question {
             font-size: 1.25rem;
+        }
+
+        /* Timer compact en version mobile */
+        .quiz-timer {
+            padding: 0.5rem 0.75rem;
+            margin-bottom: 1rem;
+            border-radius: 0.35rem;
+        }
+
+        .quiz-timer:not(.timeout) .timer-row {
+            margin-bottom: 0;
+        }
+
+        .quiz-timer:not(.timeout) .timer-bar {
+            display: none;
+        }
+
+        .quiz-timer:not(.timeout) .timer-row {
+            font-size: 0.9rem;
+        }
+
+        .quiz-timer.timeout {
+            padding: 0.75rem 1rem;
+        }
+
+        .quiz-timer.timeout .timer-row {
+            margin-bottom: 0.5rem;
+        }
+
+        .quiz-timer.timeout .timer-bar {
+            display: block;
         }
 
         .answers-grid {
@@ -511,11 +547,20 @@
 
         .question-frame {
             padding: 1rem;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
         }
 
         .quiz-question {
             font-size: 1.1rem;
+        }
+
+        /* Timer encore plus compact sur très petits écrans */
+        .quiz-timer:not(.timeout) {
+            padding: 0.4rem 0.6rem;
+        }
+
+        .quiz-timer:not(.timeout) .timer-row {
+            font-size: 0.85rem;
         }
 
         .answer-frame {
@@ -685,6 +730,10 @@
 
     function timeUp() {
         cleanup();
+        // Ajouter la classe timeout au timer pour afficher le design complet
+        var timerEl = document.getElementById('quiz-timer-{{ question.id }}');
+        if (timerEl) timerEl.classList.add('timeout');
+        
         if (formEl) {
             // retirer la contrainte required pour permettre l'envoi sans réponse
             var radios = formEl.querySelectorAll('input[type="radio"][name="selected_answer"]');
