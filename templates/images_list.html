@@ -20,6 +20,17 @@
         </div>
         <div class="image-footer">
             <small>{{ image.filename }}</small>
+            {% if image.copyright_credits or image.copyright_link %}
+            <div class="image-copyright">
+                {% if image.copyright_credits and image.copyright_link %}
+                <small><a href="{{ image.copyright_link }}" target="_blank" rel="noopener noreferrer" class="copyright-link"><strong>Crédits:</strong> {{ image.copyright_credits }}</a></small>
+                {% elif image.copyright_credits %}
+                <small><strong>Crédits:</strong> {{ image.copyright_credits }}</small>
+                {% elif image.copyright_link %}
+                <small><a href="{{ image.copyright_link }}" target="_blank" rel="noopener noreferrer" class="copyright-link">🔗 Source</a></small>
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
     </div>
     {% endfor %}
@@ -35,6 +46,9 @@
     .image-preview{display:flex;align-items:center;justify-content:center;background:var(--bg-color);border-radius:.5rem;overflow:hidden;aspect-ratio:4/3;margin:.5rem 0;border:1px dashed var(--border-color)}
     .image-preview img{max-width:100%;max-height:100%;object-fit:contain}
     .image-actions{display:flex;gap:.25rem}
+    .image-copyright{display:flex;flex-direction:column;gap:.25rem;margin-top:.5rem;padding-top:.5rem;border-top:1px solid var(--border-color)}
+    .copyright-link{color:inherit;text-decoration:none;cursor:pointer}
+    .copyright-link:hover{opacity:0.8}
     .no-images{text-align:center;padding:2rem;color:var(--text-light)}
 </style>
 

@@ -10,6 +10,17 @@
         {% if rule_set.intro_image %}
         <div class="intro-image">
             <img src="{{ rule_set.intro_image.url }}" alt="Image d'introduction" />
+                {% if rule_set.intro_image.copyright_credits or rule_set.intro_image.copyright_link %}
+                <div class="image-copyright">
+                    {% if rule_set.intro_image.copyright_credits and rule_set.intro_image.copyright_link %}
+                    <small><a href="{{ rule_set.intro_image.copyright_link }}" target="_blank" rel="noopener noreferrer" class="copyright-link">© {{ rule_set.intro_image.copyright_credits }}</a></small>
+                    {% elif rule_set.intro_image.copyright_credits %}
+                    <small>© {{ rule_set.intro_image.copyright_credits }}</small>
+                    {% elif rule_set.intro_image.copyright_link %}
+                    <small><a href="{{ rule_set.intro_image.copyright_link }}" target="_blank" rel="noopener noreferrer" class="copyright-link">🔗 Source</a></small>
+                    {% endif %}
+                </div>
+                {% endif %}
         </div>
         {% endif %}
         {% if rule_set.intro_message %}
@@ -199,6 +210,17 @@
             {% if rule_set_item.intro_image %}
             <div class="card-image">
                 <img src="{{ rule_set_item.intro_image.url }}" alt="Image d'introduction" />
+                {% if rule_set_item.intro_image.copyright_credits or rule_set_item.intro_image.copyright_link %}
+                <div class="image-copyright">
+                    {% if rule_set_item.intro_image.copyright_credits and rule_set_item.intro_image.copyright_link %}
+                    <small><a href="{{ rule_set_item.intro_image.copyright_link }}" target="_blank" rel="noopener noreferrer" class="copyright-link">© {{ rule_set_item.intro_image.copyright_credits }}</a></small>
+                    {% elif rule_set_item.intro_image.copyright_credits %}
+                    <small>© {{ rule_set_item.intro_image.copyright_credits }}</small>
+                    {% elif rule_set_item.intro_image.copyright_link %}
+                    <small><a href="{{ rule_set_item.intro_image.copyright_link }}" target="_blank" rel="noopener noreferrer" class="copyright-link">🔗 Source</a></small>
+                    {% endif %}
+                </div>
+                {% endif %}
             </div>
             {% endif %}
             {% if rule_set_item.intro_message %}
@@ -477,6 +499,30 @@
             border-radius: 0.5rem;
         }
 
+        .card-image .image-copyright {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 0.5rem;
+            border-radius: 0 0 0.5rem 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .copyright-link {
+            color: inherit;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .copyright-link:hover {
+            opacity: 0.8;
+        }
+
         .card-intro {
             margin-bottom: 1rem;
             font-size: 0.9rem;
@@ -506,14 +552,32 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .intro-image {
+            position: relative;
+            display: inline-block;
             margin-bottom: 1rem;
         }
+
         .intro-image img {
             max-width: 100%;
             height: auto;
             border-radius: 0.5rem;
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
+
+        .intro-image .image-copyright {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 0.5rem;
+            border-radius: 0 0 0.5rem 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
         .intro-message {
             font-size: 1.1rem;
             line-height: 1.6;
