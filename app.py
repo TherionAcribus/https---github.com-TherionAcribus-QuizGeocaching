@@ -3781,6 +3781,7 @@ def submit_quiz_answer():
         history_raw = (request.form.get('history') or '').strip()
         rule_set_slug = (request.form.get('rule_set') or '').strip()
         is_timeout = bool((request.form.get('timeout') or '').strip())
+        quick_double_click = (request.form.get('quick_double_click') or '').strip().lower() == 'true'
 
         if not question_id_raw.isdigit():
             return "Identifiant de question invalide", 400
@@ -3943,7 +3944,8 @@ def submit_quiz_answer():
             current_question_num=current_question_num,
             total_questions=total_questions,
             total_score=total_score,
-            is_timeout=is_timeout
+            is_timeout=is_timeout,
+            quick_double_click=quick_double_click
         )
     except Exception as e:
         return f"Erreur: {str(e)}", 400

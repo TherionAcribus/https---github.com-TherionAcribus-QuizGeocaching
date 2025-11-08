@@ -75,6 +75,7 @@
         {% if rule_set %}
         <input type="hidden" name="rule_set" value="{{ rule_set.slug }}">
         {% endif %}
+        <input type="hidden" name="quick_double_click" value="{{ 'true' if (quick_double_click or (current_user and current_user.get_preferences().get('double_click_validation', False))) else 'false' }}">
         {% for answer in answers %}
         <label class="answer-frame {% if question._shuffled_correct_answer and loop.index == question._shuffled_correct_answer|int %}correct-answer{% endif %}">
             <input type="radio" name="selected_answer" value="{{ loop.index }}" required>
@@ -635,12 +636,30 @@
 </style>
 
 <script>
-// Préférence utilisateur pour la validation en double-clic
-const doubleClickValidationEnabled = {{ current_user.get_preferences().get('double_click_validation', false)|tojson if current_user else false }};
-// Option temporaire pour cette session (prise en compte si définie explicitement)
-const quickDoubleClickEnabled = {{ quick_double_click|tojson }};
-// Le choix temporaire prend le pas sur les préférences utilisateur
-const doubleClickEnabled = (window.quickDoubleClickEnabled || false);
+(function() {
+    // Préférence utilisateur pour la validation en double-clic
+    const doubleClickValidationEnabled = {{ (current_user.get_preferences().get('double_click_validation', false) if current_user else false)|tojson }};
+    // Option temporaire pour cette session (prise en compte si définie explicitement)
+    const quickDoubleClickEnabled = {{ quick_double_click|default(false)|tojson }};
+    // Activation effective : préférence permanente OU option temporaire
+    const sessionDoubleClick = typeof quickDoubleClickEnabled === 'boolean' ? quickDoubleClickEnabled : false;
+    const prefDoubleClick = typeof doubleClickValidationEnabled === 'boolean' ? doubleClickValidationEnabled : false;
+    const doubleClickEnabled = sessionDoubleClick || prefDoubleClick;
+
+    window.quickDoubleClickEnabled = doubleClickEnabled;
+    window.quickDoubleClickConfig = {
+        doubleClickValidationEnabled,
+        quickDoubleClickEnabled,
+        sessionDoubleClick,
+        prefDoubleClick,
+        doubleClickEnabled
+    };
+
+    const quickDoubleClickInput = document.querySelector('input[name="quick_double_click"]');
+    if (quickDoubleClickInput) {
+        quickDoubleClickInput.value = doubleClickEnabled ? 'true' : 'false';
+    }
+})();
 </script>
 
 {% if rule_set and rule_set.timer_seconds %}
@@ -718,6 +737,8 @@ const doubleClickEnabled = (window.quickDoubleClickEnabled || false);
 <script>
 // Gestion de la validation en double-clic sur les réponses
 (function() {
+    const doubleClickConfig = window.quickDoubleClickConfig || {};
+    const doubleClickEnabled = Boolean(doubleClickConfig.doubleClickEnabled);
     if (!doubleClickEnabled) return;
 
     const answerFrames = document.querySelectorAll('.answer-frame');
@@ -725,26 +746,55 @@ const doubleClickEnabled = (window.quickDoubleClickEnabled || false);
 
     if (!form || !answerFrames.length) return;
 
+    const DOUBLE_TAP_DELAY = 350;
+    let lastTapTime = 0;
+    let lastTapTarget = null;
+
+    function ensureSelection(frame) {
+        const radio = frame.querySelector('input[type="radio"]');
+        if (radio && !radio.checked) {
+            radio.checked = true;
+            radio.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        return radio;
+    }
+
+    function submitForm() {
+        setTimeout(() => {
+            if (typeof form.requestSubmit === 'function') {
+                form.requestSubmit();
+            } else {
+                form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+            }
+        }, 100);
+    }
+
+    function handleQuickValidation(frame) {
+        const radio = ensureSelection(frame);
+        if (!radio) return;
+        submitForm();
+    }
+
     answerFrames.forEach(frame => {
         frame.addEventListener('dblclick', function(e) {
             e.preventDefault();
-
-            // Vérifier que cette réponse est sélectionnée
-            const radio = this.querySelector('input[type="radio"]');
-            if (!radio) return;
-
-            // Sélectionner cette réponse si elle ne l'est pas déjà
-            if (!radio.checked) {
-                radio.checked = true;
-                // Déclencher l'événement change pour mettre à jour l'UI
-                radio.dispatchEvent(new Event('change'));
-            }
-
-            // Soumettre le formulaire après un court délai pour permettre à l'UI de se mettre à jour
-            setTimeout(() => {
-                form.dispatchEvent(new Event('submit'));
-            }, 100);
+            handleQuickValidation(frame);
         });
+
+        frame.addEventListener('touchend', function(e) {
+            const now = performance.now();
+            const isSameTarget = lastTapTarget === frame;
+            if (isSameTarget && (now - lastTapTime) <= DOUBLE_TAP_DELAY) {
+                e.preventDefault();
+                handleQuickValidation(frame);
+                lastTapTime = 0;
+                lastTapTarget = null;
+            } else {
+                lastTapTime = now;
+                lastTapTarget = frame;
+                ensureSelection(frame);
+            }
+        }, { passive: false });
 
         // Ajouter un indicateur visuel pour montrer que le double-clic est disponible
         frame.style.position = 'relative';
