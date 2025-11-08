@@ -21,18 +21,22 @@
   <div class="alert alert-danger">{{ error_message }}</div>
   {% endif %}
   <!-- Formulaire de connexion avec mot de passe -->
-  <form class="password-login" hx-post="/auth/widget-login" hx-target="#auth-widget" hx-swap="outerHTML" hx-headers='{"HX-Redirect":"/play"}'>
+  <form class="password-login" hx-post="/auth/widget-login" hx-target="#auth-widget" hx-swap="outerHTML" hx-headers='{"HX-Redirect":"{{ next_url or url_for('play_quiz') }}"}'>
     <div class="login-fields">
       <input type="text" name="username" value="{{ login_username }}" placeholder="Votre pseudo" class="pseudo-input" readonly>
       <input type="password" name="password" placeholder="Mot de passe" class="password-input" required>
     </div>
+    <input type="hidden" name="next" value="{{ next_url or url_for('play_quiz') }}">
+    <input type="hidden" name="source" value="{{ source or 'widget' }}">
     <button class="btn btn-primary" type="submit">Se connecter</button>
     <button class="btn btn-secondary" type="button" hx-get="/auth/widget" hx-target="#auth-widget" hx-swap="outerHTML">Annuler</button>
   </form>
   {% else %}
   <!-- Formulaire de connexion rapide -->
-  <form class="quick-login" hx-post="/auth/quick-login" hx-target="#auth-widget" hx-swap="outerHTML" hx-headers='{"HX-Redirect":"/play"}'>
+  <form class="quick-login" hx-post="/auth/quick-login" hx-target="#auth-widget" hx-swap="outerHTML" hx-headers='{"HX-Redirect":"{{ next_url or url_for('play_quiz') }}"}'>
     <input type="text" name="pseudo" placeholder="Votre pseudo" class="pseudo-input" required>
+    <input type="hidden" name="next" value="{{ next_url or url_for('play_quiz') }}">
+    <input type="hidden" name="source" value="{{ source or 'widget' }}">
     <button class="btn btn-primary" type="submit">Entrer</button>
   </form>
   <a href="/register" class="btn btn-primary">Créer un compte</a>

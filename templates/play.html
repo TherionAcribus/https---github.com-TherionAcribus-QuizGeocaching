@@ -31,6 +31,8 @@
     </div>
     {% endif %}
 
+    {% set start_redirect_url = url_for('play_quiz', rule_set=rule_set.slug, auto_start=1) if rule_set else url_for('play_quiz', auto_start=1) %}
+
     <div class="rule-details">
         <h3>Règles appliquées</h3>
         <ul>
@@ -75,14 +77,50 @@
         </ul>
     </div>
 
-    <button class="btn btn-primary btn-large"
-            hx-get="/api/quiz/next"
-            hx-target="#quiz-stage"
-            hx-swap="innerHTML"
-            hx-vals='{"rule_set": "{{ rule_set.slug }}", "history": "", "quick_double_click": "{{ 'true' if quick_double_click else 'false' }}"}'
-            id="start-quiz-btn">
-        🚀 Démarrer le quiz
-    </button>
+    <div class="quiz-start" id="play-start-wrapper" data-has-user="{{ 'true' if current_user else 'false' }}" data-auto-start="{{ 'true' if auto_start else 'false' }}">
+        {% if current_user %}
+        <button class="btn btn-primary btn-large"
+                hx-get="/api/quiz/next"
+                hx-target="#quiz-stage"
+                hx-swap="innerHTML"
+                hx-vals='{"rule_set": "{{ rule_set.slug }}", "history": "", "quick_double_click": "{{ 'true' if quick_double_click else 'false' }}"}'
+                id="start-quiz-btn">
+            🚀 Démarrer le quiz
+        </button>
+        {% else %}
+        <div class="start-button-step" id="start-button-step">
+            <button class="btn btn-primary btn-large" id="start-quiz-btn" type="button">🚀 Démarrer le quiz</button>
+        </div>
+        <form id="pseudo-start-form" class="start-form" hx-post="/auth/quick-login" hx-swap="none">
+            <div class="form-fields">
+                <label for="quick-pseudo-input" class="form-label">Choisissez un pseudo pour cette session</label>
+                <input type="text" name="pseudo" id="quick-pseudo-input" placeholder="Votre pseudo" required>
+            </div>
+            <input type="hidden" name="next" value="{{ start_redirect_url }}">
+            <input type="hidden" name="source" value="play-start">
+            <div class="form-actions">
+                <button class="btn btn-primary" type="submit">Valider et démarrer le quiz</button>
+                <button class="btn btn-secondary" type="button" id="cancel-start-input">Annuler</button>
+            </div>
+            <p class="login-hint">Si ce pseudo est protégé par un mot de passe, nous vous le demanderons juste après.</p>
+        </form>
+        <form id="password-start-form" class="start-form" hx-post="/auth/widget-login" hx-swap="none" hidden>
+            <div class="form-fields">
+                <label for="password-start-username" class="form-label">Pseudo</label>
+                <input type="text" id="password-start-username" name="username" readonly>
+                <label for="password-start-password" class="form-label">Mot de passe</label>
+                <input type="password" id="password-start-password" name="password" placeholder="Votre mot de passe" required>
+            </div>
+            <input type="hidden" name="next" value="{{ start_redirect_url }}">
+            <input type="hidden" name="source" value="play-start">
+            <div class="form-actions">
+                <button class="btn btn-primary" type="submit">Connexion et démarrage</button>
+                <button class="btn btn-secondary" type="button" id="password-back-btn">Retour</button>
+            </div>
+            <p class="error-message" id="password-error" hidden></p>
+        </form>
+        {% endif %}
+    </div>
 
     <!-- Option temporaire de double-clic -->
     <div class="quick-double-click-option">
@@ -591,6 +629,23 @@
         .btn-outline { background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); }
         .btn-outline:hover { background: var(--primary-color); color: white; }
 
+        .quiz-start { margin-top: 2rem; display: flex; flex-direction: column; gap: 1.5rem; align-items: center; }
+        .quiz-start .btn-large { font-size: 1.25rem; padding: 1rem 2.75rem; }
+        .start-button-step { display: flex; justify-content: center; width: 100%; }
+        .start-form { display: none; width: 100%; max-width: 460px; background: rgba(16, 26, 49, 0.65); border: 1px solid rgba(255,255,255,0.14); border-radius: 1rem; padding: 1.75rem; box-shadow: 0 24px 40px rgba(7, 14, 32, 0.4); flex-direction: column; gap: 1.25rem; }
+        .start-form.active { display: flex; }
+        .start-form .form-fields { display: flex; flex-direction: column; gap: 1rem; }
+        .start-form .form-label { font-weight: 600; color: var(--primary-color); font-size: 1.05rem; }
+        .start-form input[type="text"],
+        .start-form input[type="password"] { padding: 1.05rem 1.35rem; border-radius: 0.9rem; border: 1px solid rgba(255,255,255,0.22); background: rgba(10, 18, 35, 0.78); color: white; font-size: 1.15rem; }
+        .start-form input::placeholder { color: rgba(255,255,255,0.65); }
+        .start-form input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(62, 84, 172, 0.22); }
+        .start-form .form-actions { display: flex; gap: 0.85rem; flex-wrap: wrap; justify-content: flex-end; }
+        .start-form .btn { flex: 1; min-width: 150px; font-size: 1rem; }
+        .start-form .btn-secondary { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.2); }
+        .start-form .login-hint { margin: 0; font-size: 0.9rem; color: rgba(219, 234, 254, 0.85); }
+        .start-form .error-message { margin: 0; font-size: 0.9rem; color: #fca5a5; font-weight: 600; }
+
         /* Styles pour l'option de double-clic rapide */
         .quick-double-click-option {
             margin: 1rem 0;
@@ -682,6 +737,10 @@
             .option-description {
                 margin-left: 1.75rem;
             }
+
+            .start-form { max-width: 100%; padding: 1.25rem; }
+            .start-form .form-actions { flex-direction: column; }
+            .start-form .btn { width: 100%; }
         }
 
     </style>
@@ -723,6 +782,130 @@
             if (setupElement) {
                 setupElement.remove();
             }
+        }
+
+        // Gestion du flux de démarrage sans pseudo préalable
+        function initStartPrompt() {
+            const wrapper = document.getElementById('play-start-wrapper');
+            if (!wrapper) return;
+
+            const hasUser = wrapper.dataset.hasUser === 'true';
+            const autoStart = wrapper.dataset.autoStart === 'true';
+            if (hasUser) {
+                if (autoStart) {
+                    const startBtn = document.getElementById('start-quiz-btn');
+                    if (startBtn) {
+                        startBtn.click();
+                    }
+                }
+                return;
+            }
+
+            const startButtonStep = document.getElementById('start-button-step');
+            const pseudoForm = document.getElementById('pseudo-start-form');
+            const passwordForm = document.getElementById('password-start-form');
+            const pseudoInput = document.getElementById('quick-pseudo-input');
+            const cancelBtn = document.getElementById('cancel-start-input');
+            const passwordBackBtn = document.getElementById('password-back-btn');
+            const passwordUsername = document.getElementById('password-start-username');
+            const passwordPassword = document.getElementById('password-start-password');
+            const passwordError = document.getElementById('password-error');
+            const quizStage = document.getElementById('quiz-stage');
+
+            function showPseudoForm() {
+                if (startButtonStep) startButtonStep.style.display = 'none';
+                pseudoForm.classList.add('active');
+                pseudoInput.focus();
+                passwordForm.hidden = true;
+                passwordForm.classList.remove('active');
+            }
+
+            function resetForms() {
+                pseudoForm.classList.remove('active');
+                pseudoForm.reset();
+                pseudoForm.querySelector('input[name="pseudo"]').focus();
+                passwordForm.hidden = true;
+                passwordForm.classList.remove('active');
+                passwordForm.reset();
+                if (passwordError) {
+                    passwordError.hidden = true;
+                    passwordError.textContent = '';
+                }
+                if (startButtonStep) startButtonStep.style.display = '';
+            }
+
+            if (autoStart) {
+                showPseudoForm();
+            }
+
+            if (startButtonStep) {
+                const startBtn = document.getElementById('start-quiz-btn');
+                if (startBtn) {
+                    startBtn.addEventListener('click', function () {
+                        showPseudoForm();
+                    });
+                }
+            }
+
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', function () {
+                    resetForms();
+                });
+            }
+
+            if (passwordBackBtn) {
+                passwordBackBtn.addEventListener('click', function () {
+                    passwordForm.hidden = true;
+                    passwordForm.classList.remove('active');
+                    if (passwordError) {
+                        passwordError.hidden = true;
+                        passwordError.textContent = '';
+                    }
+                    pseudoForm.classList.add('active');
+                    pseudoInput.focus();
+                });
+            }
+
+            document.body.addEventListener('quiz-login-success', function (evt) {
+                const detail = evt.detail || {};
+                if (detail.source !== 'play-start') return;
+                // Retirer les formulaires et lancer le quiz
+                wrapper.dataset.hasUser = 'true';
+                pseudoForm.remove();
+                if (passwordForm) passwordForm.remove();
+                if (passwordError) passwordError.remove();
+
+                const autoBtn = document.createElement('button');
+                autoBtn.type = 'button';
+                autoBtn.style.display = 'none';
+                autoBtn.setAttribute('hx-get', `/api/quiz/next?rule_set={{ rule_set.slug if rule_set else '' }}&history=&quick_double_click={{ 'true' if quick_double_click else 'false' }}`);
+                autoBtn.setAttribute('hx-target', '#quiz-stage');
+                autoBtn.setAttribute('hx-swap', 'innerHTML');
+                quizStage.appendChild(autoBtn);
+                autoBtn.click();
+                autoBtn.remove();
+            });
+
+            document.body.addEventListener('quiz-login-password-required', function (evt) {
+                const detail = evt.detail || {};
+                passwordUsername.value = detail.username || '';
+                passwordPassword.value = '';
+                passwordForm.hidden = false;
+                passwordForm.classList.add('active');
+                pseudoForm.classList.remove('active');
+                passwordPassword.focus();
+                if (detail.next) {
+                    passwordForm.querySelector('input[name="next"]').value = detail.next;
+                }
+            });
+
+            document.body.addEventListener('quiz-login-password-error', function (evt) {
+                const detail = evt.detail || {};
+                if (passwordError) {
+                    passwordError.textContent = detail.message || 'Erreur de connexion';
+                    passwordError.hidden = false;
+                }
+            });
         }
 
         // Gestion de l'option de double-clic rapide
@@ -774,6 +957,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Initialiser la gestion du double-clic rapide
             handleQuickDoubleClick();
+            initStartPrompt();
 
             // Quand HTMX charge du contenu dans #quiz-stage, supprimer la configuration
             document.getElementById('quiz-stage').addEventListener('htmx:afterSwap', function(evt) {

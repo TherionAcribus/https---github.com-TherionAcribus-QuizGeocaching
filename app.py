@@ -256,6 +256,9 @@ def quick_login():
     if not pseudo:
         return "Pseudo requis", 400
 
+    next_url = (request.form.get('next') or request.headers.get('HX-Redirect') or url_for('play_quiz'))
+    source = (request.form.get('source') or 'widget')
+
     # Chercher utilisateur par username exact
     user = User.query.filter_by(username=pseudo).first()
 
@@ -268,18 +271,30 @@ def quick_login():
         # Assurer que le widget reflète l'état connecté dans cette même réponse
         g.current_user = user
         resp = make_response('')
-        resp.headers['HX-Redirect'] = url_for('play_quiz')
+        resp.headers['HX-Redirect'] = next_url
+        resp.headers['HX-Trigger'] = json.dumps({'quiz-login-success': {'source': source, 'username': user.username}})
         return resp
     elif user.password_hash:
         # Si l'utilisateur a un mot de passe, afficher le formulaire de connexion avec pseudo pré-rempli
-        return render_template('auth_widget.html', login_username=pseudo, show_password_form=True)
+        if source == 'play-start':
+            resp = make_response('')
+            resp.headers['HX-Trigger'] = json.dumps({'quiz-login-password-required': {'username': pseudo, 'next': next_url}})
+            return resp
+        return render_template(
+            'auth_widget.html',
+            login_username=pseudo,
+            show_password_form=True,
+            next_url=next_url,
+            source=source,
+        )
     else:
         # Utilisateur existant sans mot de passe, connexion directe
         session['user_id'] = user.id
         # Assurer que le widget reflète l'état connecté dans cette même réponse
         g.current_user = user
         resp = make_response('')
-        resp.headers['HX-Redirect'] = url_for('play_quiz')
+        resp.headers['HX-Redirect'] = next_url
+        resp.headers['HX-Trigger'] = json.dumps({'quiz-login-success': {'source': source, 'username': user.username}})
         return resp
 
 
@@ -298,19 +313,44 @@ def widget_login():
     """Connexion depuis le widget avec pseudo + mot de passe."""
     username = (request.form.get('username') or '').strip()
     password = (request.form.get('password') or '').strip()
+    next_url = (request.form.get('next') or request.headers.get('HX-Redirect') or url_for('play_quiz'))
+    source = (request.form.get('source') or 'widget')
 
     if not username or not password:
-        return render_template('auth_widget.html', login_username=username, show_password_form=True, error_message="Pseudo et mot de passe requis")
+        if source == 'play-start':
+            resp = make_response('')
+            resp.headers['HX-Trigger'] = json.dumps({'quiz-login-password-error': {'message': "Pseudo et mot de passe requis"}})
+            return resp
+        return render_template(
+            'auth_widget.html',
+            login_username=username,
+            show_password_form=True,
+            error_message="Pseudo et mot de passe requis",
+            next_url=next_url,
+            source=source,
+        )
 
     user = User.query.filter_by(username=username).first()
     if not user or not user.password_hash or not check_password_hash(user.password_hash, password):
-        return render_template('auth_widget.html', login_username=username, show_password_form=True, error_message="Identifiants invalides")
+        if source == 'play-start':
+            resp = make_response('')
+            resp.headers['HX-Trigger'] = json.dumps({'quiz-login-password-error': {'message': "Identifiants invalides"}})
+            return resp
+        return render_template(
+            'auth_widget.html',
+            login_username=username,
+            show_password_form=True,
+            error_message="Identifiants invalides",
+            next_url=next_url,
+            source=source,
+        )
 
     session['user_id'] = user.id
     # Assurer que le widget reflète l'état connecté dans cette même réponse
     g.current_user = user
     resp = make_response('')
-    resp.headers['HX-Redirect'] = url_for('play_quiz')
+    resp.headers['HX-Redirect'] = next_url
+    resp.headers['HX-Trigger'] = json.dumps({'quiz-login-success': {'source': source, 'username': user.username}})
     return resp
 
 
@@ -3373,6 +3413,8 @@ def play_quiz():
     """Page pour choisir un set de règles et jouer au quiz."""
     rule_set = None
     rule_set_slug = request.args.get('rule_set', '').strip()
+    auto_start_param = (request.args.get('auto_start') or '').strip().lower()
+    auto_start = auto_start_param in ('1', 'true', 'yes', 'on')
     if rule_set_slug:
         rule_set = QuizRuleSet.query.filter_by(slug=rule_set_slug, is_active=True).first()
     else:
@@ -3401,7 +3443,8 @@ def play_quiz():
     return render_template('play.html',
                            rule_sets=rule_sets,
                            rule_set=rule_set,
-                           quick_double_click=quick_double_click_enabled)
+                           quick_double_click=quick_double_click_enabled,
+                           auto_start=auto_start)
 
 
 @app.route('/api/quiz/next')
