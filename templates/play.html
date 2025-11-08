@@ -244,19 +244,8 @@
 </div>
 {% endif %}
 
-<div id="quiz-stage" class="quiz-stage">
-    {{ rule_set }}
-    {% if rule_set %}
-    <div class="placeholder">Cliquez sur "🚀 Démarrer le quiz" pour commencer avec le set de règles "{{ rule_set.name }}".</div>
-    <div class="placeholder small">Le scoring et les quotas seront appliqués automatiquement.</div>
-    {% else %}
-    <div class="placeholder">Sélectionnez vos filtres et cliquez sur "Démarrer".</div>
-    <div class="placeholder small">Les questions sont tirées au hasard parmi celles publiées.</div>
-    <div class="placeholder small">L'historique évite les répétitions pendant la session.</div>
-    {% endif %}
+<div id="quiz-stage" class="quiz-stage">   
     <style>
-        .placeholder { color: var(--muted-color); margin: .25rem 0; }
-        .placeholder.small { font-size: .9rem; }
         .quiz-stage { margin-top: 1rem; }
 
         /* Styles pour la bannière de mise à niveau du compte */
