@@ -119,6 +119,18 @@
         </div>
     </div>
 
+    <!-- Bouton flottant mobile pour passer à la question suivante -->
+    <button class="btn-floating-next" type="button"
+            hx-get="/api/quiz/next"
+            hx-target="#quiz-stage"
+            hx-swap="innerHTML"
+            hx-vals='{"history": "{{ history }}"{% if rule_set %}, "rule_set": "{{ rule_set.slug }}"{% endif %}, "quick_double_click": "{{ 'true' if quick_double_click else 'false' }}"}'
+            title="Question suivante">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+    </button>
+
     <!-- Actions -->
     <div class="result-actions">
         <button class="btn btn-primary btn-large" type="button"
@@ -513,6 +525,50 @@
         text-align: center;
         color: var(--text-light);
         font-size: 0.9rem;
+    }
+
+    /* Bouton flottant pour mobile */
+    .btn-floating-next {
+        display: none;
+        position: fixed;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4), 0 2px 4px rgba(0, 0, 0, 0.2);
+        cursor: pointer;
+        z-index: 100;
+        transition: all 0.3s ease;
+        padding: 0;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+
+    .btn-floating-next:hover {
+        background: linear-gradient(135deg, #059669, #047857);
+        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.5), 0 3px 6px rgba(0, 0, 0, 0.25);
+        transform: translateY(-50%) scale(1.05);
+    }
+
+    .btn-floating-next:active {
+        transform: translateY(-50%) scale(0.95);
+    }
+
+    .btn-floating-next svg {
+        width: 28px;
+        height: 28px;
+    }
+
+    /* Afficher le bouton flottant uniquement sur mobile */
+    @media (max-width: 768px) {
+        .btn-floating-next {
+            display: flex;
+        }
     }
 
     /* Responsive design */
