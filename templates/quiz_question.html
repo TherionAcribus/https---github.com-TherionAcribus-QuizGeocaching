@@ -90,9 +90,6 @@
                 <div class="answer-text-container">
                     <span class="answer-index">{{ loop.index }}</span>
                     <span class="answer-text">{{ answer }}</span>
-                    {% if question._shuffled_correct_answer and loop.index == question._shuffled_correct_answer|int %}
-                    <span class="correct-hint" title="Bonne réponse (visible pour les tests)">✓</span>
-                    {% endif %}
                 </div>
             </div>
         </label>
