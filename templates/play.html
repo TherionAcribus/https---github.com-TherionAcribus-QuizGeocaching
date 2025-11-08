@@ -1022,6 +1022,35 @@
                         playSafe(sfxError);
                     }
                 });
+
+                // Scroll automatique vers les ancres appropriées
+                stage.addEventListener('htmx:afterSwap', function() {
+                    // Attendre un court instant pour que le DOM soit bien rendu
+                    setTimeout(function() {
+                        let targetAnchor = null;
+
+                        // Détecter le type de contenu chargé et trouver l'ancre appropriée
+                        if (stage.querySelector('#quiz-question-anchor')) {
+                            // Page de question
+                            targetAnchor = stage.querySelector('#quiz-question-anchor');
+                        } else if (stage.querySelector('#quiz-result-anchor')) {
+                            // Page de résultat
+                            targetAnchor = stage.querySelector('#quiz-result-anchor');
+                        } else if (stage.querySelector('#quiz-final-anchor')) {
+                            // Page de fin de quiz
+                            targetAnchor = stage.querySelector('#quiz-final-anchor');
+                        }
+
+                        // Scroll vers l'ancre avec un comportement smooth
+                        if (targetAnchor) {
+                            targetAnchor.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'start',
+                                inline: 'nearest'
+                            });
+                        }
+                    }, 100);
+                });
             }
         });
     </script>

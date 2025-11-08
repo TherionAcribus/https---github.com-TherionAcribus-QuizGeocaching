@@ -36,7 +36,7 @@
     </div>
 
     <!-- Status de la réponse -->
-    <div class="result-status {% if is_correct %}ok{% else %}ko{% endif %}">
+    <div class="result-status {% if is_correct %}ok{% else %}ko{% endif %}" id="quiz-result-anchor">
         {% if is_correct %}
         ✅ Bonne réponse !
         {% if rule_set and score > 0 %}
