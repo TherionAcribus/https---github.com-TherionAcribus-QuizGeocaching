@@ -73,7 +73,7 @@
             {% set answers = question.possible_answers.split('|||') %}
             <div class="answers-summary">
                 {% for answer in answers %}
-                <div class="answer-summary-item {% if loop.index == question.correct_answer|int %}correct{% else %}incorrect{% endif %}">
+                <div class="answer-summary-item {% if loop.index == question.correct_answer|int %}correct{% else %}incorrect{% endif %}{% if loop.index == selected|int %} chosen{% endif %}">
                     <span class="answer-num">{{ loop.index }}</span>
                     <div class="answer-content">
                         {% set link = (question.answer_image_links | selectattr('answer_index','equalto', loop.index) | list) %}
@@ -393,6 +393,18 @@
 
     .answer-summary-item.incorrect {
         opacity: 0.7;
+    }
+
+    .answer-summary-item.incorrect.chosen {
+        background: #fef2f2;
+        border-color: #ef4444;
+        opacity: 1;
+    }
+
+    .answer-summary-item.incorrect.chosen .answer-num,
+    .answer-summary-item.incorrect.chosen .answer-text {
+        color: #b91c1c;
+        font-weight: 600;
     }
 
     .answer-num {
