@@ -79,7 +79,7 @@
             hx-get="/api/quiz/next"
             hx-target="#quiz-stage"
             hx-swap="innerHTML"
-            hx-vals='{"rule_set": "{{ rule_set.slug }}", "history": ""}'
+            hx-vals='{"rule_set": "{{ rule_set.slug }}", "history": "", "quick_double_click": "{{ 'true' if quick_double_click else 'false' }}"}'
             id="start-quiz-btn">
         🚀 Démarrer le quiz
     </button>
@@ -88,7 +88,7 @@
     <div class="quick-double-click-option">
         <label class="checkbox-label">
             <input type="checkbox" id="quick-double-click" name="quick_double_click"
-                   {% if current_user and current_user.get_preferences().get('double_click_validation', False) %}checked{% endif %}>
+                   {% if quick_double_click %}checked{% endif %}>
             <span class="checkmark"></span>
             <span class="option-text">Double-clic pour valider</span>
         </label>
@@ -750,8 +750,11 @@
                         vals = JSON.parse(currentVals);
                     } catch (e) {}
 
-                    vals.quick_double_click = this.checked;
+                    vals.quick_double_click = this.checked ? 'true' : 'false';
                     startBtn.setAttribute('hx-vals', JSON.stringify(vals));
+                    try {
+                        window.sessionStorage.setItem('quickDoubleClickCheckbox', this.checked ? 'true' : 'false');
+                    } catch (err) {}
                 });
 
                 // Initialiser avec la valeur actuelle
@@ -761,8 +764,20 @@
                     vals = JSON.parse(currentVals);
                 } catch (e) {}
 
-                vals.quick_double_click = checkbox.checked;
+                vals.quick_double_click = checkbox.checked ? 'true' : 'false';
                 startBtn.setAttribute('hx-vals', JSON.stringify(vals));
+
+                try {
+                    const stored = window.sessionStorage.getItem('quickDoubleClickCheckbox');
+                    if (stored !== null) {
+                        const shouldCheck = stored === 'true';
+                        if (checkbox.checked !== shouldCheck) {
+                            checkbox.checked = shouldCheck;
+                            vals.quick_double_click = shouldCheck ? 'true' : 'false';
+                            startBtn.setAttribute('hx-vals', JSON.stringify(vals));
+                        }
+                    }
+                } catch (err) {}
             }
         }
 

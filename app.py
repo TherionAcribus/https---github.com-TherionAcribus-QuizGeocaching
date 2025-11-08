@@ -3357,6 +3357,17 @@ def _generate_quiz_playlist(rule_set: QuizRuleSet, current_user_id: int | None) 
         traceback.print_exc()
         return []
 
+
+def _get_user_double_click_preference() -> bool:
+    try:
+        if getattr(g, 'current_user', None):
+            prefs = g.current_user.get_preferences()
+            return bool(prefs.get('double_click_validation', False))
+    except Exception:
+        pass
+    return False
+
+
 @app.route('/play')
 def play_quiz():
     """Page pour choisir un set de règles et jouer au quiz."""
@@ -3380,7 +3391,17 @@ def play_quiz():
     # Récupérer tous les sets de règles actifs
     rule_sets = QuizRuleSet.query.filter_by(is_active=True).order_by(QuizRuleSet.name).all()
 
-    return render_template('play.html', rule_sets=rule_sets, rule_set=rule_set)
+    quick_double_click_pref = _get_user_double_click_preference()
+    if 'quick_double_click_enabled' in session:
+        quick_double_click_enabled = bool(session.get('quick_double_click_enabled'))
+    else:
+        quick_double_click_enabled = quick_double_click_pref
+        session['quick_double_click_enabled'] = quick_double_click_enabled
+
+    return render_template('play.html',
+                           rule_sets=rule_sets,
+                           rule_set=rule_set,
+                           quick_double_click=quick_double_click_enabled)
 
 
 @app.route('/api/quiz/next')
@@ -3392,7 +3413,15 @@ def next_quiz_question():
         params = request.args
         rule_set_slug = (params.get('rule_set') or '').strip()
         history_raw = (params.get('history') or '').strip()
-        quick_double_click = params.get('quick_double_click', 'false').lower() == 'true'
+        quick_double_click_param = params.get('quick_double_click')
+        if quick_double_click_param is not None:
+            quick_double_click = quick_double_click_param.lower() == 'true'
+            session['quick_double_click_enabled'] = quick_double_click
+        elif 'quick_double_click_enabled' in session:
+            quick_double_click = bool(session.get('quick_double_click_enabled'))
+        else:
+            quick_double_click = _get_user_double_click_preference()
+            session['quick_double_click_enabled'] = quick_double_click
         history_ids = []
         if history_raw:
             for token in history_raw.split(','):
@@ -3485,7 +3514,8 @@ def next_quiz_question():
                     total_questions=total_questions,
                     total_score=total_score,
                     total_correct_answers=total_correct_answers,
-                    history=history_raw or ''
+                    history=history_raw or '',
+                    quick_double_click=quick_double_click
                 )
 
             # Charger la prochaine question via l'ID de la playlist
@@ -3781,7 +3811,15 @@ def submit_quiz_answer():
         history_raw = (request.form.get('history') or '').strip()
         rule_set_slug = (request.form.get('rule_set') or '').strip()
         is_timeout = bool((request.form.get('timeout') or '').strip())
-        quick_double_click = (request.form.get('quick_double_click') or '').strip().lower() == 'true'
+        quick_double_click_raw = request.form.get('quick_double_click')
+        if quick_double_click_raw is not None:
+            quick_double_click = quick_double_click_raw.strip().lower() == 'true'
+            session['quick_double_click_enabled'] = quick_double_click
+        elif 'quick_double_click_enabled' in session:
+            quick_double_click = bool(session.get('quick_double_click_enabled'))
+        else:
+            quick_double_click = _get_user_double_click_preference()
+            session['quick_double_click_enabled'] = quick_double_click
 
         if not question_id_raw.isdigit():
             return "Identifiant de question invalide", 400

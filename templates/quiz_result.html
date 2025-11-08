@@ -125,7 +125,7 @@
                 hx-get="/api/quiz/next"
                 hx-target="#quiz-stage"
                 hx-swap="innerHTML"
-                hx-vals='{"history": "{{ history }}"{% if rule_set %}, "rule_set": "{{ rule_set.slug }}"{% endif %}{% if quick_double_click %}, "quick_double_click": "true"{% endif %}}'>
+                hx-vals='{"history": "{{ history }}"{% if rule_set %}, "rule_set": "{{ rule_set.slug }}"{% endif %}, "quick_double_click": "{{ 'true' if quick_double_click else 'false' }}"}'>
             Question suivante
         </button>
     </div>
