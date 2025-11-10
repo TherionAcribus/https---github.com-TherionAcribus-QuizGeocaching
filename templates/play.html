@@ -994,35 +994,78 @@
             }
 
             function unlockAudioOnFirstInteraction() {
-                const unlock = () => {
-                    audioElements.forEach((audio) => {
-                        if (!audio) return;
-                        const previousMutedState = audio.muted;
-                        audio.muted = true;
-                        const playPromise = audio.play();
-                        if (playPromise && typeof playPromise.then === 'function') {
-                            playPromise
-                                .then(() => {
-                                    audio.pause();
-                                    audio.currentTime = 0;
-                                    audio.muted = previousMutedState;
-                                })
-                                .catch(() => {
-                                    audio.muted = previousMutedState;
-                                });
-                        } else {
-                            audio.muted = previousMutedState;
-                        }
-                    });
+                let unlocked = false;
 
-                    document.removeEventListener('pointerdown', unlock);
-                    document.removeEventListener('touchstart', unlock);
-                    document.removeEventListener('keydown', unlock);
+                const cleanup = () => {
+                    document.removeEventListener('pointerdown', tryUnlock);
+                    document.removeEventListener('touchstart', tryUnlock);
+                    document.removeEventListener('keydown', tryUnlock);
                 };
 
-                document.addEventListener('pointerdown', unlock, { once: true });
-                document.addEventListener('touchstart', unlock, { once: true, passive: true });
-                document.addEventListener('keydown', unlock, { once: true });
+                const tryUnlock = () => {
+                    if (unlocked) {
+                        cleanup();
+                        return;
+                    }
+
+                    const primaryAudio = sfxClick || audioElements.find(Boolean);
+                    if (!primaryAudio) {
+                        unlocked = true;
+                        cleanup();
+                        return;
+                    }
+
+                    const previousMutedState = primaryAudio.muted;
+                    primaryAudio.muted = true;
+                    const playPromise = primaryAudio.play();
+
+                    if (playPromise && typeof playPromise.then === 'function') {
+                        playPromise
+                            .then(() => {
+                                primaryAudio.pause();
+                                primaryAudio.currentTime = 0;
+                                primaryAudio.muted = previousMutedState;
+                                unlocked = true;
+
+                                // Forcer le chargement silencieux des autres sons pour éviter un délai au premier déclenchement
+                                audioElements.forEach((audio) => {
+                                    if (!audio || audio === primaryAudio) return;
+                                    try {
+                                        const wasMuted = audio.muted;
+                                        audio.muted = true;
+                                        const p = audio.play();
+                                        if (p && typeof p.then === 'function') {
+                                            p.then(() => {
+                                                audio.pause();
+                                                audio.currentTime = 0;
+                                                audio.muted = wasMuted;
+                                            }).catch(() => {
+                                                audio.muted = wasMuted;
+                                            });
+                                        } else {
+                                            audio.pause();
+                                            audio.currentTime = 0;
+                                            audio.muted = wasMuted;
+                                        }
+                                    } catch (e) {}
+                                });
+
+                                cleanup();
+                            })
+                            .catch(() => {
+                                primaryAudio.muted = previousMutedState;
+                                // Garder les écouteurs actifs pour réessayer lors de la prochaine interaction
+                            });
+                    } else {
+                        primaryAudio.muted = previousMutedState;
+                        unlocked = true;
+                        cleanup();
+                    }
+                };
+
+                document.addEventListener('pointerdown', tryUnlock);
+                document.addEventListener('touchstart', tryUnlock, { passive: true });
+                document.addEventListener('keydown', tryUnlock);
             }
 
             unlockAudioOnFirstInteraction();
