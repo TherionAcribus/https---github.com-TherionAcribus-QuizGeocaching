@@ -982,7 +982,6 @@
             const sfxValidate = document.getElementById('sfx-validate');
             const sfxCorrect = document.getElementById('sfx-correct');
             const sfxError = document.getElementById('sfx-error');
-            const audioElements = [sfxClick, sfxValidate, sfxCorrect, sfxError];
 
             function playSafe(audioEl) {
                 if (!audioEl) return;
@@ -992,83 +991,6 @@
                     if (p && typeof p.catch === 'function') p.catch(function(){});
                 } catch (e) {}
             }
-
-            function unlockAudioOnFirstInteraction() {
-                let unlocked = false;
-
-                const cleanup = () => {
-                    document.removeEventListener('pointerdown', tryUnlock);
-                    document.removeEventListener('touchstart', tryUnlock);
-                    document.removeEventListener('keydown', tryUnlock);
-                };
-
-                const tryUnlock = () => {
-                    if (unlocked) {
-                        cleanup();
-                        return;
-                    }
-
-                    const primaryAudio = sfxClick || audioElements.find(Boolean);
-                    if (!primaryAudio) {
-                        unlocked = true;
-                        cleanup();
-                        return;
-                    }
-
-                    const previousMutedState = primaryAudio.muted;
-                    primaryAudio.muted = true;
-                    const playPromise = primaryAudio.play();
-
-                    if (playPromise && typeof playPromise.then === 'function') {
-                        playPromise
-                            .then(() => {
-                                primaryAudio.pause();
-                                primaryAudio.currentTime = 0;
-                                primaryAudio.muted = previousMutedState;
-                                unlocked = true;
-
-                                // Forcer le chargement silencieux des autres sons pour éviter un délai au premier déclenchement
-                                audioElements.forEach((audio) => {
-                                    if (!audio || audio === primaryAudio) return;
-                                    try {
-                                        const wasMuted = audio.muted;
-                                        audio.muted = true;
-                                        const p = audio.play();
-                                        if (p && typeof p.then === 'function') {
-                                            p.then(() => {
-                                                audio.pause();
-                                                audio.currentTime = 0;
-                                                audio.muted = wasMuted;
-                                            }).catch(() => {
-                                                audio.muted = wasMuted;
-                                            });
-                                        } else {
-                                            audio.pause();
-                                            audio.currentTime = 0;
-                                            audio.muted = wasMuted;
-                                        }
-                                    } catch (e) {}
-                                });
-
-                                cleanup();
-                            })
-                            .catch(() => {
-                                primaryAudio.muted = previousMutedState;
-                                // Garder les écouteurs actifs pour réessayer lors de la prochaine interaction
-                            });
-                    } else {
-                        primaryAudio.muted = previousMutedState;
-                        unlocked = true;
-                        cleanup();
-                    }
-                };
-
-                document.addEventListener('pointerdown', tryUnlock);
-                document.addEventListener('touchstart', tryUnlock, { passive: true });
-                document.addEventListener('keydown', tryUnlock);
-            }
-
-            unlockAudioOnFirstInteraction();
 
             if (stage) {
                 // Clic sur une réponse (label.answer-frame)
@@ -1099,35 +1021,6 @@
                     } else if (ko) {
                         playSafe(sfxError);
                     }
-                });
-
-                // Scroll automatique vers les ancres appropriées
-                stage.addEventListener('htmx:afterSwap', function() {
-                    // Attendre un court instant pour que le DOM soit bien rendu
-                    setTimeout(function() {
-                        let targetAnchor = null;
-
-                        // Détecter le type de contenu chargé et trouver l'ancre appropriée
-                        if (stage.querySelector('#quiz-question-anchor')) {
-                            // Page de question
-                            targetAnchor = stage.querySelector('#quiz-question-anchor');
-                        } else if (stage.querySelector('#quiz-result-anchor')) {
-                            // Page de résultat
-                            targetAnchor = stage.querySelector('#quiz-result-anchor');
-                        } else if (stage.querySelector('#quiz-final-anchor')) {
-                            // Page de fin de quiz
-                            targetAnchor = stage.querySelector('#quiz-final-anchor');
-                        }
-
-                        // Scroll vers l'ancre avec un comportement smooth
-                        if (targetAnchor) {
-                            targetAnchor.scrollIntoView({
-                                behavior: 'smooth',
-                                block: 'start',
-                                inline: 'nearest'
-                            });
-                        }
-                    }, 100);
                 });
             }
         });

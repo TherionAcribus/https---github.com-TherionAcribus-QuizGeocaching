@@ -31,30 +31,6 @@
     </div>
     {% endif %}
 
-    <!-- En-tête avec badges -->
-    <div class="quiz-header">
-        {% if question.theme %}
-        <span class="badge" {% if question.theme.color %}style="background-color: {{ question.theme.color }}20; color: {{ question.theme.color }}; border: 1px solid {{ question.theme.color }}"{% endif %}>
-            {% if question.theme.icon %}{{ question.theme.icon }} {% endif %}{{ question.theme.name }}
-        </span>
-        {% endif %}
-        <span class="badge">Niveau {{ question.difficulty_level or 'N/A' }}</span>
-    </div>
-
-    <!-- Cadre principal de la question -->
-    <div class="question-frame" id="quiz-question-anchor">
-        <div class="question-content">
-            <h3 class="quiz-question">{{ question.question_text }}</h3>
-            {% if question.images %}
-            <div class="quiz-images">
-                {% for img in question.images %}
-                <img src="/uploads/{{ img.filename }}" alt="{{ img.alt_text or img.title }}" title="{{ img.title }}">
-                {% endfor %}
-            </div>
-            {% endif %}
-        </div>
-    </div>
-
     {% if rule_set and rule_set.timer_seconds %}
     <div class="quiz-timer" id="quiz-timer-{{ question.id }}">
         <div class="timer-row">
@@ -66,6 +42,30 @@
         </div>
     </div>
     {% endif %}
+
+    <!-- En-tête avec badges -->
+    <div class="quiz-header">
+        {% if question.theme %}
+        <span class="badge" {% if question.theme.color %}style="background-color: {{ question.theme.color }}20; color: {{ question.theme.color }}; border: 1px solid {{ question.theme.color }}"{% endif %}>
+            {% if question.theme.icon %}{{ question.theme.icon }} {% endif %}{{ question.theme.name }}
+        </span>
+        {% endif %}
+        <span class="badge">Niveau {{ question.difficulty_level or 'N/A' }}</span>
+    </div>
+
+    <!-- Cadre principal de la question -->
+    <div class="question-frame">
+        <div class="question-content">
+            <h3 class="quiz-question">{{ question.question_text }}</h3>
+            {% if question.images %}
+            <div class="quiz-images">
+                {% for img in question.images %}
+                <img src="/uploads/{{ img.filename }}" alt="{{ img.alt_text or img.title }}" title="{{ img.title }}">
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
 
     <!-- Grille des réponses -->
     {% set answers = question._shuffled_answers if question._shuffled_answers else question.possible_answers.split('|||') %}
@@ -90,6 +90,9 @@
                 <div class="answer-text-container">
                     <span class="answer-index">{{ loop.index }}</span>
                     <span class="answer-text">{{ answer }}</span>
+                    {% if question._shuffled_correct_answer and loop.index == question._shuffled_correct_answer|int %}
+                    <span class="correct-hint" title="Bonne réponse (visible pour les tests)">✓</span>
+                    {% endif %}
                 </div>
             </div>
         </label>
@@ -172,11 +175,6 @@
 
     .timer-fill.critical {
         background: #ef4444;
-    }
-
-    .quiz-timer.timeout {
-        background: #fef2f2;
-        border-color: #ef4444;
     }
 
     .progress-info {
@@ -450,43 +448,12 @@
 
         .question-frame {
             padding: 1.5rem;
-            margin-bottom: 0.75rem;
+            margin-bottom: 1.5rem;
             min-height: 120px;
         }
 
         .quiz-question {
             font-size: 1.25rem;
-        }
-
-        /* Timer compact en version mobile */
-        .quiz-timer {
-            padding: 0.5rem 0.75rem;
-            margin-bottom: 1rem;
-            border-radius: 0.35rem;
-        }
-
-        .quiz-timer:not(.timeout) .timer-row {
-            margin-bottom: 0;
-        }
-
-        .quiz-timer:not(.timeout) .timer-bar {
-            display: none;
-        }
-
-        .quiz-timer:not(.timeout) .timer-row {
-            font-size: 0.9rem;
-        }
-
-        .quiz-timer.timeout {
-            padding: 0.75rem 1rem;
-        }
-
-        .quiz-timer.timeout .timer-row {
-            margin-bottom: 0.5rem;
-        }
-
-        .quiz-timer.timeout .timer-bar {
-            display: block;
         }
 
         .answers-grid {
@@ -544,20 +511,11 @@
 
         .question-frame {
             padding: 1rem;
-            margin-bottom: 0.5rem;
+            margin-bottom: 1rem;
         }
 
         .quiz-question {
             font-size: 1.1rem;
-        }
-
-        /* Timer encore plus compact sur très petits écrans */
-        .quiz-timer:not(.timeout) {
-            padding: 0.4rem 0.6rem;
-        }
-
-        .quiz-timer:not(.timeout) .timer-row {
-            font-size: 0.85rem;
         }
 
         .answer-frame {
@@ -727,10 +685,6 @@
 
     function timeUp() {
         cleanup();
-        // Ajouter la classe timeout au timer pour afficher le design complet
-        var timerEl = document.getElementById('quiz-timer-{{ question.id }}');
-        if (timerEl) timerEl.classList.add('timeout');
-        
         if (formEl) {
             // retirer la contrainte required pour permettre l'envoi sans réponse
             var radios = formEl.querySelectorAll('input[type="radio"][name="selected_answer"]');
