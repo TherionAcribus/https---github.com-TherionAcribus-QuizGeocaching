@@ -982,6 +982,7 @@
             const sfxValidate = document.getElementById('sfx-validate');
             const sfxCorrect = document.getElementById('sfx-correct');
             const sfxError = document.getElementById('sfx-error');
+            const audioElements = [sfxClick, sfxValidate, sfxCorrect, sfxError];
 
             function playSafe(audioEl) {
                 if (!audioEl) return;
@@ -991,6 +992,40 @@
                     if (p && typeof p.catch === 'function') p.catch(function(){});
                 } catch (e) {}
             }
+
+            function unlockAudioOnFirstInteraction() {
+                const unlock = () => {
+                    audioElements.forEach((audio) => {
+                        if (!audio) return;
+                        const previousMutedState = audio.muted;
+                        audio.muted = true;
+                        const playPromise = audio.play();
+                        if (playPromise && typeof playPromise.then === 'function') {
+                            playPromise
+                                .then(() => {
+                                    audio.pause();
+                                    audio.currentTime = 0;
+                                    audio.muted = previousMutedState;
+                                })
+                                .catch(() => {
+                                    audio.muted = previousMutedState;
+                                });
+                        } else {
+                            audio.muted = previousMutedState;
+                        }
+                    });
+
+                    document.removeEventListener('pointerdown', unlock);
+                    document.removeEventListener('touchstart', unlock);
+                    document.removeEventListener('keydown', unlock);
+                };
+
+                document.addEventListener('pointerdown', unlock, { once: true });
+                document.addEventListener('touchstart', unlock, { once: true, passive: true });
+                document.addEventListener('keydown', unlock, { once: true });
+            }
+
+            unlockAudioOnFirstInteraction();
 
             if (stage) {
                 // Clic sur une réponse (label.answer-frame)
