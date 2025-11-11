@@ -77,7 +77,7 @@
         {% endif %}
         <input type="hidden" name="quick_double_click" value="{{ 'true' if (quick_double_click or (current_user and current_user.get_preferences().get('double_click_validation', False))) else 'false' }}">
         {% for answer in answers %}
-        <label class="answer-frame {% if question._shuffled_correct_answer and loop.index == question._shuffled_correct_answer|int %}correct-answer{% endif %}">
+        <label class="answer-frame">
             <input type="radio" name="selected_answer" value="{{ loop.index }}" required>
             <div class="answer-content">
                 {% set original_index = question._original_indices[loop.index - 1] + 1 if (question._original_indices and loop.index <= question._original_indices|length) else loop.index %}
@@ -90,9 +90,6 @@
                 <div class="answer-text-container">
                     <span class="answer-index">{{ loop.index }}</span>
                     <span class="answer-text">{{ answer }}</span>
-                    {% if question._shuffled_correct_answer and loop.index == question._shuffled_correct_answer|int %}
-                    <span class="correct-hint" title="Bonne réponse (visible pour les tests)">✓</span>
-                    {% endif %}
                 </div>
             </div>
         </label>
