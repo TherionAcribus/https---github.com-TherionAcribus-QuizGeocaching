@@ -3455,6 +3455,7 @@ def play_quiz():
             try:
                 in_prog = UserQuizSession.query.filter_by(user_id=g.current_user.id, status='in_progress').all()
                 for s in in_prog:
+                    print(f"[QUIZ SESSION] Abandon session {s.id} while entering /play without specific rule_set (user={s.user_id})")
                     s.status = 'abandoned'
                     s.updated_at = datetime.utcnow()
                 if in_prog:
@@ -3551,6 +3552,7 @@ def next_quiz_question():
                                 .filter_by(user_id=g.current_user.id, rule_set_id=rule_set.id, status='in_progress')
                                 .all())
                         for s in prev:
+                            print(f"[QUIZ SESSION] Abandon in-progress session {s.id} for rule_set {s.rule_set_id} before starting new session (user={s.user_id})")
                             s.status = 'abandoned'
                             s.updated_at = datetime.utcnow()
                         # Créer une nouvelle session
@@ -3565,9 +3567,11 @@ def next_quiz_question():
                         )
                         db.session.add(new_session)
                         db.session.commit()
+                        print(f"[QUIZ SESSION] Started new session {new_session.id} for rule_set {rule_set.id} (user={new_session.user_id}, total_questions={new_session.total_questions})")
                         # Stocker l'ID de session dans la session Flask pour ce namespace utilisateur+set
                         session_key_session_id = f"quiz_session_id:{user_ns}:{rule_set.slug}"
                         session[session_key_session_id] = new_session.id
+                        print(f"[QUIZ SESSION] Stored session id in flask session under key='{session_key_session_id}' -> {new_session.id}")
                     except Exception:
                         db.session.rollback()
 
@@ -3607,15 +3611,27 @@ def next_quiz_question():
                     try:
                         session_key_session_id = f"quiz_session_id:{user_ns}:{rule_set.slug}"
                         sess_id = session.get(session_key_session_id)
+                        if not sess_id:
+                            print(f"[QUIZ SESSION] No session id found in flask session for key='{session_key_session_id}' during quiz completion.")
                         if sess_id:
                             s = UserQuizSession.query.get(sess_id)
                             if s and s.status == 'in_progress':
+                                print(
+                                    f"[QUIZ SESSION] Updating session {s.id} (user={s.user_id}) before marking completed: "
+                                    f"answered={s.answered_count}, total={s.total_questions}, correct={s.correct_count}, score={s.total_score}"
+                                )
                                 s.status = 'completed'
                                 s.answered_count = s.total_questions
                                 s.correct_count = total_correct_answers
                                 s.total_score = total_score
                                 s.updated_at = datetime.utcnow()
                                 db.session.commit()
+                                print(
+                                    f"[QUIZ SESSION] Session {s.id} marked completed at quiz end: "
+                                    f"answered={s.answered_count}, correct={s.correct_count}, score={s.total_score}"
+                                )
+                            else:
+                                print(f"[QUIZ SESSION] Expected in-progress session for sess_id={sess_id}, found status={s.status if s else 'missing'} (user={g.current_user.id}).")
                     except Exception:
                         db.session.rollback()
                 
@@ -3663,11 +3679,12 @@ def next_quiz_question():
             ).order_by(db.func.random()).first()
 
         # Si on sort du mode set (pas de rule_set), marquer toute session in_progress comme abandonnée
-        if getattr(g, 'current_user', None):
+        if not rule_set and getattr(g, 'current_user', None):
             try:
                 # Abandonner toutes sessions en cours (tous sets) si l'utilisateur a quitté le set
                 in_prog = UserQuizSession.query.filter_by(user_id=g.current_user.id, status='in_progress').all()
                 for s in in_prog:
+                    print(f"[QUIZ SESSION] Abandon session {s.id} after leaving rule_set context in /api/quiz/next (user={s.user_id})")
                     s.status = 'abandoned'
                     s.updated_at = datetime.utcnow()
                 if in_prog:
@@ -3832,6 +3849,7 @@ def cancel_quiz_session():
             return "Aucune session en cours", 200
         s = UserQuizSession.query.get(sess_id)
         if s and s.status == 'in_progress':
+            print(f"[QUIZ SESSION] Cancel request abandoning session {s.id} for rule_set {rule_set.id} (user={s.user_id})")
             s.status = 'abandoned'
             s.updated_at = datetime.utcnow()
             db.session.commit()
@@ -4166,17 +4184,35 @@ def submit_quiz_answer():
                 try:
                     session_key_session_id = f"quiz_session_id:{user_ns}:{rule_set.slug}"
                     sess_id = session.get(session_key_session_id)
+                    if not sess_id:
+                        print(f"[QUIZ SESSION] No session id found in flask session for key='{session_key_session_id}' during answer update.")
                     if sess_id:
                         s = UserQuizSession.query.get(sess_id)
                         if s and s.status == 'in_progress':
+                            before_answered = s.answered_count or 0
+                            before_correct = s.correct_count or 0
+                            before_score = s.total_score or 0
+                            print(
+                                f"[QUIZ SESSION] Answer update for session {s.id} (user={s.user_id}): "
+                                f"answered={before_answered}, total={s.total_questions}, correct={before_correct}, score={before_score}"
+                            )
                             s.answered_count = min((s.answered_count or 0) + 1, s.total_questions or 0)
                             if is_correct:
                                 s.correct_count = (s.correct_count or 0) + 1
                             # total_score est déjà mis à jour en session; l'appliquer si on a un score crédité
                             if score:
                                 s.total_score = (s.total_score or 0) + int(score)
+                            if (s.total_questions or 0) > 0 and s.answered_count >= (s.total_questions or 0):
+                                s.status = 'completed'
+                                print(f"[QUIZ SESSION] Session {s.id} reached completion via answer handler.")
                             s.updated_at = datetime.utcnow()
                             db.session.commit()
+                            print(
+                                f"[QUIZ SESSION] Post-answer session {s.id}: "
+                                f"status={s.status}, answered={s.answered_count}, correct={s.correct_count}, score={s.total_score}"
+                            )
+                        else:
+                            print(f"[QUIZ SESSION] Retrieved session {getattr(s, 'id', None)} but status={getattr(s, 'status', None)} during answer update (expected in_progress).")
                 except Exception:
                     db.session.rollback()
 
