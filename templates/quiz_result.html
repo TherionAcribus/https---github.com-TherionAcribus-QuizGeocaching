@@ -120,13 +120,14 @@
     </div>
 
     <!-- Actions -->
+    {% set is_last_question = (total_questions > 0 and current_question_num >= total_questions) %}
     <div class="result-actions">
         <button class="btn btn-primary btn-large" type="button"
                 hx-get="/api/quiz/next"
                 hx-target="#quiz-stage"
                 hx-swap="innerHTML"
                 hx-vals='{"history": "{{ history }}"{% if rule_set %}, "rule_set": "{{ rule_set.slug }}"{% endif %}, "quick_double_click": "{{ 'true' if quick_double_click else 'false' }}"}'>
-            Question suivante
+            {% if is_last_question %}Voir mon score{% else %}Question suivante{% endif %}
         </button>
     </div>
 
