@@ -3617,6 +3617,18 @@ def next_quiz_question():
                                 db.session.commit()
                     except Exception:
                         db.session.rollback()
+                
+                # Si perfect bonus obtenu, afficher l'animation d'abord
+                if perfect_bonus_added:
+                    return render_template(
+                        'quiz_perfect_animation.html',
+                        rule_set=rule_set,
+                        total_questions=total_questions,
+                        total_correct_answers=total_correct_answers,
+                        perfect_bonus_value=perfect_bonus_value,
+                        history=history_raw or ''
+                    )
+                
                 return render_template(
                     'quiz_final.html',
                     rule_set=rule_set,
@@ -3744,6 +3756,58 @@ def next_quiz_question():
                              total_questions=total_questions,
                              total_score=total_score,
                              quick_double_click=quick_double_click)
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
+
+
+@app.route('/api/quiz/final')
+def show_quiz_final():
+    """Affiche le récapitulatif final du quiz (utilisé après l'animation perfect)."""
+    try:
+        params = request.args
+        rule_set_slug = (params.get('rule_set') or '').strip()
+        history_raw = (params.get('history') or '').strip()
+        
+        rule_set = None
+        if rule_set_slug:
+            rule_set = QuizRuleSet.query.filter_by(slug=rule_set_slug, is_active=True).first()
+        
+        if not rule_set:
+            return "Set de règles introuvable", 404
+        
+        (
+            playlist_session_key,
+            playlist_index_key,
+            score_session_key,
+            correct_answers_session_key,
+            breakdown_session_key,
+            streak_session_key,
+            perfect_session_key,
+            user_ns,
+        ) = _quiz_session_keys(rule_set.slug)
+        
+        total_correct_answers = int(session.get(correct_answers_session_key, 0) or 0)
+        total_score = int(session.get(score_session_key, 0) or 0)
+        playlist = session.get(playlist_session_key) or []
+        total_questions = len(playlist)
+        score_breakdown = list(session.get(breakdown_session_key, [])) if breakdown_session_key else []
+        perfect_bonus_added = bool(session.get(perfect_session_key))
+        perfect_bonus_value = int(rule_set.perfect_quiz_bonus or 0) if perfect_bonus_added else 0
+        
+        quick_double_click = bool(session.get('quick_double_click_enabled', False))
+        
+        return render_template(
+            'quiz_final.html',
+            rule_set=rule_set,
+            total_questions=total_questions,
+            total_score=total_score,
+            total_correct_answers=total_correct_answers,
+            perfect_bonus_added=perfect_bonus_added,
+            perfect_bonus_value=perfect_bonus_value,
+            score_breakdown=score_breakdown,
+            history=history_raw or '',
+            quick_double_click=quick_double_click
+        )
     except Exception as e:
         return f"Erreur: {str(e)}", 400
 
@@ -3995,6 +4059,9 @@ def submit_quiz_answer():
         # Calculer le score selon les règles
         score = 0
         breakdown = None
+        combo_triggered = False
+        combo_bonus = 0
+        combo_streak = 0
         if rule_set:
             history_ids = []
             if history_raw:
@@ -4005,9 +4072,7 @@ def submit_quiz_answer():
             question_index = len(history_ids) + 1
             question_score, breakdown = _calculate_score(rule_set, question, is_correct)
 
-            combo_bonus = 0
             streak_after = 0
-            combo_triggered = False
             if rule_set.combo_bonus_enabled and rule_set.combo_step and rule_set.combo_bonus_points:
                 combo_step = max(int(rule_set.combo_step), 0)
                 combo_points = int(rule_set.combo_bonus_points or 0)
@@ -4020,6 +4085,7 @@ def submit_quiz_answer():
                 else:
                     current_streak = 0
                 streak_after = current_streak
+                combo_streak = streak_after
                 if streak_session_key:
                     session[streak_session_key] = current_streak
             else:
@@ -4158,6 +4224,9 @@ def submit_quiz_answer():
             history=next_history,
             rule_set=rule_set,
             score=score,
+            combo_triggered=combo_triggered,
+            combo_bonus=combo_bonus,
+            combo_streak=combo_streak,
             current_question_num=current_question_num,
             total_questions=total_questions,
             total_score=total_score,

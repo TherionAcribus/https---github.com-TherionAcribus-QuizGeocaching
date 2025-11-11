@@ -51,6 +51,18 @@
         {% endif %}
     </div>
 
+    <!-- Animation combo -->
+    {% if combo_triggered and combo_bonus > 0 %}
+    <div class="combo-animation" id="combo-animation">
+        <div class="combo-bubble">
+            <div class="combo-icon">🔥</div>
+            <div class="combo-title">COMBO!</div>
+            <div class="combo-streak">{{ combo_streak }} bonnes réponses d'affilée</div>
+            <div class="combo-points">+{{ combo_bonus }} pts</div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Cadre de la question -->
     <div class="question-frame">
         <div class="question-content">
@@ -282,6 +294,97 @@
         font-size: 0.9rem;
     }
 
+    /* Animation combo */
+    .combo-animation {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 9999;
+        pointer-events: none;
+        animation: comboAppear 2.5s ease-out forwards;
+    }
+
+    .combo-bubble {
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        border: 3px solid #fff;
+        border-radius: 1.5rem;
+        padding: 1.5rem 2rem;
+        box-shadow: 0 10px 40px rgba(251, 191, 36, 0.6), 0 0 0 4px rgba(251, 191, 36, 0.3);
+        text-align: center;
+        min-width: 250px;
+        animation: comboBounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    .combo-icon {
+        font-size: 3rem;
+        margin-bottom: 0.5rem;
+        animation: comboRotate 0.8s ease-in-out infinite alternate;
+    }
+
+    .combo-title {
+        font-size: 2rem;
+        font-weight: 900;
+        color: #fff;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        letter-spacing: 0.1em;
+        margin-bottom: 0.5rem;
+    }
+
+    .combo-streak {
+        font-size: 1rem;
+        color: #fffbeb;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .combo-points {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #fff;
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+    }
+
+    @keyframes comboAppear {
+        0% {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.5);
+        }
+        15% {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        85% {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        100% {
+            opacity: 0;
+            transform: translate(-50%, -60%) scale(0.8);
+        }
+    }
+
+    @keyframes comboBounce {
+        0% {
+            transform: scale(0.3) rotate(-5deg);
+        }
+        50% {
+            transform: scale(1.1) rotate(2deg);
+        }
+        100% {
+            transform: scale(1) rotate(0deg);
+        }
+    }
+
+    @keyframes comboRotate {
+        0% {
+            transform: rotate(-10deg) scale(1);
+        }
+        100% {
+            transform: rotate(10deg) scale(1.1);
+        }
+    }
+
     .question-frame {
         background: var(--card-bg);
         border: 2px solid var(--primary-color);
@@ -506,6 +609,27 @@
 
     /* Responsive design */
     @media (max-width: 768px) {
+        .combo-bubble {
+            min-width: 200px;
+            padding: 1.25rem 1.5rem;
+        }
+
+        .combo-icon {
+            font-size: 2.5rem;
+        }
+
+        .combo-title {
+            font-size: 1.5rem;
+        }
+
+        .combo-streak {
+            font-size: 0.9rem;
+        }
+
+        .combo-points {
+            font-size: 1.25rem;
+        }
+
         .quiz-game-container {
             padding: 0.5rem;
         }
