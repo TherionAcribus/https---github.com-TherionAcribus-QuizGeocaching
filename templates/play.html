@@ -141,8 +141,7 @@
     </div>
 
     <div class="rule-actions">
-        <a href="/play" class="btn btn-secondary">Choisir un autre set</a>
-        <a href="/quiz-rules" class="btn btn-outline">Gérer les sets de règles</a>
+        <a href="/play" class="btn btn-secondary">Choisir un autre Quiz</a>
     </div>
 </div>
 {% else %}
@@ -207,7 +206,7 @@
 {% endif %}
 
 <div id="quiz-setup" class="rule-sets-selection">
-    <h3>Choisissez votre mode de jeu</h3>
+    <h3>Choisissez votre jeu</h3>
     <div class="rule-sets-grid">
         {% for rule_set_item in rule_sets %}
         <div class="rule-set-card">
@@ -267,7 +266,7 @@
             </div>
             {% endif %}
             <div class="card-actions">
-                <a href="/play?rule_set={{ rule_set_item.slug }}" class="btn btn-primary">Jouer avec ce set</a>
+                <a href="/play?rule_set={{ rule_set_item.slug }}" class="btn btn-primary">Lancer ce Quiz</a>
             </div>
         </div>
         {% endfor %}
