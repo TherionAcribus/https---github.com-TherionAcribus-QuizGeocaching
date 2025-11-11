@@ -3100,7 +3100,7 @@ def _interleave_round_robin(lists_by_difficulty):
 
 def _quiz_session_keys(rule_set_slug: str):
     """Construit des clés de session isolées par utilisateur et par set.
-    Retourne (playlist_key, index_key, score_key, correct_key, user_id_str)
+    Retourne (playlist_key, index_key, score_key, correct_key, breakdown_key, streak_key, perfect_key, user_id_str)
     """
     user_id_str = str(g.current_user.id) if getattr(g, 'current_user', None) else 'anon'
     prefix = f"{user_id_str}:{rule_set_slug}"
@@ -3108,7 +3108,22 @@ def _quiz_session_keys(rule_set_slug: str):
     index_key = f"quiz_playlist_index:{prefix}"
     score_key = f"quiz_score:{prefix}"
     correct_key = f"quiz_correct_answers:{prefix}"
-    return playlist_key, index_key, score_key, correct_key, user_id_str
+    breakdown_key = f"quiz_score_breakdown:{prefix}"
+    streak_key = f"quiz_combo_streak:{prefix}"
+    perfect_key = f"quiz_perfect_awarded:{prefix}"
+    return playlist_key, index_key, score_key, correct_key, breakdown_key, streak_key, perfect_key, user_id_str
+
+
+def _append_score_breakdown(breakdown_key: str, event: dict):
+    """Ajoute un événement de score dans la liste stockée en session."""
+    try:
+        history = session.get(breakdown_key)
+        if not isinstance(history, list):
+            history = []
+        history.append(event)
+        session[breakdown_key] = history
+    except Exception as exc:
+        print(f"[QUIZ SCORE] Impossible d'ajouter le breakdown: {exc}")
 
 
 def _get_user_answered_keywords(user_id: int) -> set[int]:
@@ -3493,12 +3508,18 @@ def next_quiz_question():
             rule_set = QuizRuleSet.query.filter_by(slug=rule_set_slug, is_active=True).first()
 
         # Mode playlist: construire/charger la playlist en session (clé par utilisateur)
-        playlist_session_key = None
-        playlist_index_key = None
-        score_session_key = None
-        correct_answers_session_key = None
+        playlist_session_key = playlist_index_key = score_session_key = correct_answers_session_key = breakdown_session_key = streak_session_key = perfect_session_key = user_ns = None
         if rule_set:
-            playlist_session_key, playlist_index_key, score_session_key, correct_answers_session_key, user_ns = _quiz_session_keys(rule_set.slug)
+            (
+                playlist_session_key,
+                playlist_index_key,
+                score_session_key,
+                correct_answers_session_key,
+                breakdown_session_key,
+                streak_session_key,
+                perfect_session_key,
+                user_ns,
+            ) = _quiz_session_keys(rule_set.slug)
 
         question = None
         total_questions = 0
@@ -3513,6 +3534,12 @@ def next_quiz_question():
                 # Reset score/correct pour ce namespace utilisateur+set
                 session[score_session_key] = 0
                 session[correct_answers_session_key] = 0
+                if breakdown_session_key:
+                    session[breakdown_session_key] = []
+                if streak_session_key:
+                    session[streak_session_key] = 0
+                if perfect_session_key:
+                    session[perfect_session_key] = False
                 print(f"[QUIZ PLAYLIST] Générée (reset={not bool(history_raw)}) pour user={user_ns} set='{rule_set.slug}' (len={len(playlist)}): {playlist}")
 
                 # Démarrer une UserQuizSession si utilisateur connecté
@@ -3551,6 +3578,29 @@ def next_quiz_question():
                 # Récupérer le nombre de bonnes réponses depuis la session
                 total_correct_answers = int(session.get(correct_answers_session_key, 0) or 0)
                 total_score = int(session.get(score_session_key, 0) or 0)
+                total_questions = len(playlist)
+
+                perfect_bonus_added = False
+                perfect_bonus_value = 0
+                if rule_set and rule_set.perfect_quiz_bonus and perfect_session_key:
+                    perfect_bonus_value = int(rule_set.perfect_quiz_bonus or 0)
+                    is_perfect = total_questions > 0 and total_correct_answers == total_questions
+                    already_awarded = bool(session.get(perfect_session_key))
+                    if is_perfect and perfect_bonus_value > 0 and not already_awarded:
+                        total_score += perfect_bonus_value
+                        session[score_session_key] = total_score
+                        session[perfect_session_key] = True
+                        perfect_bonus_added = True
+                        if breakdown_session_key:
+                            bonus_event = {
+                                'type': 'perfect_bonus',
+                                'label': 'Bonus quiz parfait',
+                                'value': perfect_bonus_value,
+                                'total_awarded': perfect_bonus_value,
+                            }
+                            _append_score_breakdown(breakdown_session_key, bonus_event)
+                score_breakdown = list(session.get(breakdown_session_key, [])) if breakdown_session_key else []
+
                 # Clore la UserQuizSession comme completed si présente
                 if getattr(g, 'current_user', None):
                     try:
@@ -3573,6 +3623,9 @@ def next_quiz_question():
                     total_questions=total_questions,
                     total_score=total_score,
                     total_correct_answers=total_correct_answers,
+                    perfect_bonus_added=perfect_bonus_added,
+                    perfect_bonus_value=perfect_bonus_value,
+                    score_breakdown=score_breakdown,
                     history=history_raw or '',
                     quick_double_click=quick_double_click
                 )
@@ -3707,7 +3760,7 @@ def cancel_quiz_session():
         rule_set = QuizRuleSet.query.filter_by(slug=rule_set_slug, is_active=True).first()
         if not rule_set:
             return "Set inconnu", 404
-        _, _, _, _, user_ns = _quiz_session_keys(rule_set.slug)
+        _, _, _, _, _, _, _, user_ns = _quiz_session_keys(rule_set.slug)
         session_key_session_id = f"quiz_session_id:{user_ns}:{rule_set.slug}"
         sess_id = session.get(session_key_session_id)
         if not sess_id:
@@ -3723,36 +3776,50 @@ def cancel_quiz_session():
         return { 'error': str(e) }, 400
 
 
-def _calculate_score(rule_set, question, is_correct, history_questions):
-    """Calcule le score selon les règles du set."""
+def _calculate_score(rule_set, question, is_correct):
+    """Calcule le score de la question et retourne le détail du calcul."""
+    breakdown = {
+        'type': 'question',
+        'question_id': question.id if question else None,
+        'question_label': (question.question_text[:120] + '…') if (question and question.question_text and len(question.question_text) > 120) else (question.question_text if question else ''),
+        'difficulty': question.difficulty_level if question else None,
+        'was_correct': bool(is_correct),
+        'base_points': rule_set.scoring_base_points if rule_set and rule_set.scoring_base_points is not None else 0,
+        'difficulty_bonus': 0,
+        'difficulty_multiplier': 1.0,
+        'question_points': 0,
+        'combo_bonus': 0,
+        'total_awarded': 0,
+        'combo_streak': 0,
+        'question_index': None,
+    }
+
     if not rule_set or not is_correct:
-        return 0
+        return 0, breakdown
 
-    score = rule_set.scoring_base_points
+    base_points = breakdown['base_points']
+    points = base_points
 
-    # Bonus selon difficulté
     if rule_set.scoring_difficulty_bonus_type == 'add':
         bonus_map = rule_set.get_difficulty_bonus_map()
-        bonus = bonus_map.get(str(question.difficulty_level), 0)
-        score += bonus
+        bonus = bonus_map.get(str(question.difficulty_level), 0) if question else 0
+        breakdown['difficulty_bonus'] = bonus
+        points += bonus
     elif rule_set.scoring_difficulty_bonus_type == 'mult':
         coeff_map = rule_set.get_difficulty_bonus_map()
-        coeff = coeff_map.get(str(question.difficulty_level), 1.0)
-        score = int(score * coeff)
+        coeff = coeff_map.get(str(question.difficulty_level), 1.0) if question else 1.0
+        try:
+            coeff = float(coeff)
+        except (TypeError, ValueError):
+            coeff = 1.0
+        points = int(round(base_points * coeff))
+        breakdown['difficulty_multiplier'] = coeff
+        breakdown['difficulty_bonus'] = points - base_points
 
-    # Bonus de combo
-    if rule_set.combo_bonus_enabled and rule_set.combo_step and rule_set.combo_bonus_points:
-        # Compter les bonnes réponses consécutives à la fin
-        consecutive_correct = 0
-        for q in reversed(history_questions):
-            if q.success_count > q.times_answered - q.success_count:  # Simplifié: majorité de succès
-                consecutive_correct += 1
-            else:
-                break
-        combo_count = consecutive_correct // rule_set.combo_step
-        score += combo_count * rule_set.combo_bonus_points
+    breakdown['question_points'] = int(points)
+    breakdown['total_awarded'] = int(points)
 
-    return score
+    return int(points), breakdown
 
 
 @app.route('/api/debug/quiz-questions')
@@ -3910,21 +3977,67 @@ def submit_quiz_answer():
 
         # Charger le set de règles si spécifié
         rule_set = None
+        playlist_session_key = playlist_index_key = score_session_key = correct_answers_session_key = breakdown_session_key = streak_session_key = perfect_session_key = user_ns = None
         if rule_set_slug:
             rule_set = QuizRuleSet.query.filter_by(slug=rule_set_slug, is_active=True).first()
+            if rule_set:
+                (
+                    playlist_session_key,
+                    playlist_index_key,
+                    score_session_key,
+                    correct_answers_session_key,
+                    breakdown_session_key,
+                    streak_session_key,
+                    perfect_session_key,
+                    user_ns,
+                ) = _quiz_session_keys(rule_set.slug)
 
         # Calculer le score selon les règles
         score = 0
+        breakdown = None
         if rule_set:
-            # Récupérer l'historique complet pour le calcul du combo
             history_ids = []
             if history_raw:
                 for token in history_raw.split(','):
                     token = token.strip()
                     if token.isdigit():
                         history_ids.append(int(token))
-            history_questions = Question.query.filter(Question.id.in_(history_ids)).all() if history_ids else []
-            score = _calculate_score(rule_set, question, is_correct, history_questions)
+            question_index = len(history_ids) + 1
+            question_score, breakdown = _calculate_score(rule_set, question, is_correct)
+
+            combo_bonus = 0
+            streak_after = 0
+            combo_triggered = False
+            if rule_set.combo_bonus_enabled and rule_set.combo_step and rule_set.combo_bonus_points:
+                combo_step = max(int(rule_set.combo_step), 0)
+                combo_points = int(rule_set.combo_bonus_points or 0)
+                current_streak = int(session.get(streak_session_key, 0) or 0) if streak_session_key else 0
+                if is_correct and combo_step > 0 and combo_points > 0:
+                    current_streak += 1
+                    if current_streak % combo_step == 0:
+                        combo_bonus = combo_points
+                        combo_triggered = True
+                else:
+                    current_streak = 0
+                streak_after = current_streak
+                if streak_session_key:
+                    session[streak_session_key] = current_streak
+            else:
+                if streak_session_key:
+                    session[streak_session_key] = 0
+
+            if breakdown:
+                breakdown['question_index'] = question_index
+                breakdown['combo_bonus'] = combo_bonus
+                breakdown['combo_triggered'] = combo_triggered
+                breakdown['combo_streak'] = streak_after
+                breakdown['total_awarded'] = int(breakdown.get('question_points', 0) + combo_bonus)
+                score = breakdown['total_awarded']
+            else:
+                score = question_score + combo_bonus
+
+            if breakdown_session_key and breakdown:
+                _append_score_breakdown(breakdown_session_key, breakdown)
 
         # Mettre à jour les statistiques globales de la question
         question.times_answered = (question.times_answered or 0) + 1
@@ -3961,10 +4074,9 @@ def submit_quiz_answer():
         db.session.commit()
 
         # Mettre à jour le score total et le nombre de bonnes réponses en session (namespace user)
-        if rule_set:
-            _, _, score_session_key, correct_answers_session_key, _ = _quiz_session_keys(rule_set.slug)
+        if rule_set and score_session_key and correct_answers_session_key:
             total_score_session = int(session.get(score_session_key, 0) or 0)
-            if is_correct and score:
+            if score:
                 total_score_session += int(score)
             session[score_session_key] = total_score_session
 
@@ -3975,8 +4087,7 @@ def submit_quiz_answer():
             session[correct_answers_session_key] = total_correct_answers_session
 
         # Mettre à jour la progression de playlist (si set de règles, namespace user)
-        if rule_set:
-            playlist_session_key, playlist_index_key, score_session_key, correct_answers_session_key, user_ns = _quiz_session_keys(rule_set.slug)
+        if rule_set and playlist_session_key and playlist_index_key:
             index = int(session.get(playlist_index_key, 0) or 0)
             playlist = session.get(playlist_session_key) or []
             # Avancer l'index si la question correspond à l'élément courant
@@ -3995,7 +4106,7 @@ def submit_quiz_answer():
                             if is_correct:
                                 s.correct_count = (s.correct_count or 0) + 1
                             # total_score est déjà mis à jour en session; l'appliquer si on a un score crédité
-                            if is_correct and score:
+                            if score:
                                 s.total_score = (s.total_score or 0) + int(score)
                             s.updated_at = datetime.utcnow()
                             db.session.commit()
@@ -4020,7 +4131,16 @@ def submit_quiz_answer():
 
         if rule_set:
             # Progression basée sur la playlist
-            playlist_session_key, playlist_index_key, score_session_key, correct_answers_session_key, user_ns = _quiz_session_keys(rule_set.slug)
+            (
+                playlist_session_key,
+                playlist_index_key,
+                score_session_key,
+                correct_answers_session_key,
+                breakdown_session_key,
+                streak_session_key,
+                perfect_session_key,
+                user_ns,
+            ) = _quiz_session_keys(rule_set.slug)
             index = int(session.get(playlist_index_key, 0) or 0)
             playlist = session.get(playlist_session_key) or []
             total_questions = len(playlist)

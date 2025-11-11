@@ -48,8 +48,65 @@
                 <span class="value">{{ rule_set.min_correct_answers_to_win }}</span>
             </div>
             {% endif %}
+            {% if perfect_bonus_added %}
+            <div class="score-line bonus-line">
+                <span class="label">Bonus perfect</span>
+                <span class="value">+{{ perfect_bonus_value }} pts</span>
+            </div>
+            {% elif rule_set.perfect_quiz_bonus %}
+            <div class="score-line bonus-line inactive">
+                <span class="label">Bonus perfect</span>
+                <span class="value muted">+{{ rule_set.perfect_quiz_bonus }} pts (non obtenu)</span>
+            </div>
+            {% endif %}
             {% endif %}
         </div>
+
+        {% if score_breakdown %}
+        <div class="score-breakdown-card">
+            <h3 class="score-breakdown-title">📊 Détail du score</h3>
+            <div class="score-breakdown-list">
+                {% for entry in score_breakdown %}
+                {% if entry.type == 'question' %}
+                <div class="breakdown-item">
+                    <div class="breakdown-item-left">
+                        <span class="breakdown-question-index">Q{{ entry.question_index or loop.index }}</span>
+                        <div class="breakdown-question-info">
+                            <div class="breakdown-question-title">
+                                {{ entry.question_label or 'Question #' ~ (entry.question_index or loop.index) }}
+                            </div>
+                            <div class="breakdown-question-meta">
+                                Niveau {{ entry.difficulty or '?' }} · {% if entry.was_correct %}<span class="meta-correct">Bonne réponse</span>{% else %}<span class="meta-incorrect">Réponse incorrecte</span>{% endif %}
+                                {% if entry.combo_streak %}· Série: {{ entry.combo_streak }}{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="breakdown-item-right">
+                        <div class="breakdown-points">+{{ entry.question_points }} pts</div>
+                        {% if entry.combo_bonus %}
+                        <div class="breakdown-combo">+{{ entry.combo_bonus }} pts combo</div>
+                        {% endif %}
+                        <div class="breakdown-total">= {{ entry.total_awarded }} pts</div>
+                    </div>
+                </div>
+                {% elif entry.type == 'perfect_bonus' %}
+                <div class="breakdown-item bonus">
+                    <div class="breakdown-item-left">
+                        <span class="breakdown-bonus-icon">🏆</span>
+                        <div class="breakdown-question-info">
+                            <div class="breakdown-question-title">{{ entry.label or 'Bonus perfect' }}</div>
+                            <div class="breakdown-question-meta">Toutes les questions ont été réussies.</div>
+                        </div>
+                    </div>
+                    <div class="breakdown-item-right">
+                        <div class="breakdown-total">+{{ entry.value }} pts</div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
 
         <div class="final-actions">
             <button class="btn btn-primary btn-large"
@@ -88,8 +145,101 @@
         .score-line { display: flex; justify-content: space-between; font-size: 1.1rem; }
         .score-line .label { color: var(--text-color); }
         .score-line .value { font-weight: 700; color: var(--primary-color); }
+        .score-line .value.muted { color: var(--muted-color); font-weight: 500; }
+        .score-line.bonus-line { border-top: 1px solid rgba(148,163,184,0.25); padding-top: .5rem; margin-top: .5rem; }
+        .score-line.bonus-line.inactive .value { color: var(--muted-color); }
+        .final-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+
+        .score-breakdown-card {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            background: rgba(15,118,110,0.04);
+            text-align: left;
+        }
+        .score-breakdown-title {
+            margin: 0 0 1rem 0;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+        }
+        .score-breakdown-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 1rem 1.25rem;
+            border-radius: 0.75rem;
+            background: var(--card-bg);
+            border: 1px solid rgba(15,118,110,0.15);
+            box-shadow: var(--shadow);
+        }
+        .breakdown-item.bonus {
+            background: #ecfeff;
+            border-color: #67e8f9;
+        }
+        .breakdown-item-left {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            flex: 1;
+        }
+        .breakdown-item-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        .breakdown-question-index {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.25rem;
+            height: 2.25rem;
+            border-radius: 999px;
+            background: var(--primary-color);
+            color: white;
+            font-weight: 700;
+        }
+        .breakdown-question-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        .breakdown-question-title {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        .breakdown-question-meta {
+            font-size: 0.85rem;
+            color: var(--muted-color);
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .meta-correct { color: #16a34a; font-weight: 600; }
+        .meta-incorrect { color: #dc2626; font-weight: 600; }
+        .breakdown-points { color: #0f766e; }
+        .breakdown-combo { color: #be123c; }
+        .breakdown-total { color: var(--primary-color); font-size: 1.1rem; }
+        .breakdown-bonus-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 999px;
+            background: rgba(250,204,21,0.2);
+            border: 2px solid rgba(234,179,8,0.6);
+            font-size: 1.4rem;
+        }
+
         .final-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
     </style>
 </div>
-
-
