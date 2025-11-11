@@ -7,6 +7,22 @@
                 <span class="question-counter">Question {{ current_question_num }} / {{ total_questions }}</span>
                 <span class="score-display">Score: {{ total_score }} pts</span>
             </div>
+
+    <!-- Bouton flottant mobile: Question suivante / Voir mon score -->
+    {% set is_last_question = (total_questions > 0 and current_question_num >= total_questions) %}
+    {% if total_questions > 0 %}
+    <div class="mobile-next-fab">
+        <button class="btn btn-primary mobile-fab-button"
+                type="button"
+                hx-get="/api/quiz/next"
+                hx-target="#quiz-stage"
+                hx-swap="innerHTML"
+                hx-vals='{"history": "{{ history }}"{% if rule_set %}, "rule_set": "{{ rule_set.slug }}"{% endif %}, "quick_double_click": "{{ 'true' if quick_double_click else 'false' }}"}'
+                aria-label="{% if is_last_question %}Voir mon score{% else %}Question suivante{% endif %}">
+            ➜
+        </button>
+    </div>
+    {% endif %}
             <div class="progress-info-right">
                 {% if current_user and current_user.password_hash %}
                 <button class="btn btn-outline btn-report" type="button"
@@ -85,9 +101,7 @@
             {% set answers = question.possible_answers.split('|||') %}
             <div class="answers-summary">
                 {% for answer in answers %}
-                {% set is_correct_answer = (loop.index == question.correct_answer|int) %}
-                {% set is_user_choice = (loop.index == selected|int) %}
-                <div class="answer-summary-item{% if is_correct_answer %} correct{% else %} incorrect{% endif %}{% if is_user_choice %} user-choice{% endif %}{% if is_user_choice and not is_correct_answer %} user-choice-error{% endif %}">
+                <div class="answer-summary-item {% if loop.index == question.correct_answer|int %}correct{% else %}incorrect{% endif %} {% if loop.index == selected|int %}selected{% endif %}">
                     <span class="answer-num">{{ loop.index }}</span>
                     <div class="answer-content">
                         {% set link = (question.answer_image_links | selectattr('answer_index','equalto', loop.index) | list) %}
@@ -144,19 +158,6 @@
             {% if is_last_question %}Voir mon score{% else %}Question suivante{% endif %}
         </button>
     </div>
-
-    {% if not is_last_question %}
-    <div class="quick-next-mobile" role="presentation">
-        <button class="btn-mobile" type="button"
-                aria-label="Question suivante"
-                hx-get="/api/quiz/next"
-                hx-target="#quiz-stage"
-                hx-swap="innerHTML"
-                hx-vals='{"history": "{{ history }}"{% if rule_set %}, "rule_set": "{{ rule_set.slug }}"{% endif %}, "quick_double_click": "{{ 'true' if quick_double_click else 'false' }}"}'>
-            <span aria-hidden="true">&gt;</span>
-        </button>
-    </div>
-    {% endif %}
 
     <!-- Modale de confirmation pour quitter le quiz -->
     <div id="quit-modal" class="modal-overlay" style="display: none;">
@@ -513,6 +514,20 @@
     .answer-summary-item.incorrect {
         opacity: 0.7;
     }
+    /* Met en avant le choix de l'utilisateur même s'il est incorrect */
+    .answer-summary-item.incorrect.selected {
+        opacity: 1;
+        background: #fef2f2;
+        border-color: #ef4444;
+    }
+    .answer-summary-item.incorrect.selected .your-choice {
+        color: #b91c1c;
+        font-weight: 700;
+        background: #fee2e2;
+        padding: 0.1rem 0.4rem;
+        border-radius: 0.25rem;
+        border: 1px solid #fecaca;
+    }
 
     .answer-num {
         font-size: 1.1rem;
@@ -528,24 +543,17 @@
     }
 
     .your-choice {
-        color: #b91c1c;
         font-weight: 500;
         font-style: italic;
     }
-
-    .answer-summary-item.user-choice {
-        box-shadow: 0 0 0 2px rgba(59,130,246,0.35);
-    }
-
-    .answer-summary-item.user-choice .your-choice {
-        color: #b91c1c;
-        font-weight: 600;
-    }
-
-    .answer-summary-item.user-choice-error {
-        border-color: #ef4444;
-        background: #fee2e2;
-        box-shadow: 0 10px 30px rgba(239,68,68,0.2);
+    /* Votre choix quand la réponse est correcte */
+    .answer-summary-item.correct .your-choice {
+        color: #065f46;
+        background: #d1fae5;
+        border: 1px solid #a7f3d0;
+        padding: 0.1rem 0.4rem;
+        border-radius: 0.25rem;
+        font-weight: 700;
     }
 
     .correct-indicator {
@@ -624,19 +632,16 @@
         flex-wrap: wrap;
     }
 
-    .quick-next-mobile {
-        display: flex;
-        justify-content: center;
-        position: fixed;
-        bottom: 1.25rem;
-        left: 0;
-        right: 0;
-        z-index: 2000;
+    .btn-large {
+        font-size: 1.2rem;
+        padding: 1rem 2rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
     }
 
-    .quick-next-mobile .btn-mobile {
-        width: 75%;
-        max-width: 340px;
+    /* Bouton flottant mobile */
+    .mobile-next-fab {
+        display: none;
     }
 
     .result-stats {
@@ -647,6 +652,37 @@
 
     /* Responsive design */
     @media (max-width: 768px) {
+        .mobile-next-fab {
+            position: fixed;
+            top: 50%;
+            right: 12px;
+            transform: translateY(-50%);
+            z-index: 1100;
+            display: block;
+        }
+
+        .mobile-next-fab .mobile-fab-button {
+            background: var(--primary-color);
+            border: 1px solid var(--primary-hover);
+            color: white;
+            box-shadow: 0 12px 24px rgba(2, 135, 77, 0.35);
+            border-radius: 999px;
+            width: 3.25rem;
+            height: 3.25rem;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+        }
+
+        .mobile-next-fab .mobile-fab-button:hover,
+        .mobile-next-fab .mobile-fab-button:focus {
+            background: var(--primary-hover);
+            border-color: var(--primary-hover);
+            box-shadow: 0 12px 28px rgba(1, 106, 61, 0.4);
+        }
+
         .combo-bubble {
             min-width: 200px;
             padding: 1.25rem 1.5rem;
@@ -746,42 +782,6 @@
         .btn-large {
             font-size: 1.1rem;
             padding: 0.875rem 1.5rem;
-        }
-
-        .quick-next-mobile {
-            display: flex;
-            position: fixed;
-            top: 50%;
-            right: 1.25rem;
-            transform: translateY(-50%);
-            z-index: 2000;
-        }
-
-        .quick-next-mobile .btn-mobile {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 60px;
-            height: 60px;
-            border-radius: 999px;
-            background: #16a34a;
-            border: 3px solid #bbf7d0;
-            color: white;
-            font-size: 2rem;
-            font-weight: 700;
-            box-shadow: 0 25px 45px rgba(22, 163, 74, 0.35);
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
-        }
-
-        .quick-next-mobile .btn-mobile:hover,
-        .quick-next-mobile .btn-mobile:focus {
-            transform: scale(1.05);
-            box-shadow: 0 30px 60px rgba(22, 163, 74, 0.45);
-        }
-
-        .quick-next-mobile .btn-mobile:focus {
-            outline: 3px solid rgba(134, 239, 172, 0.9);
-            outline-offset: 3px;
         }
     }
 
