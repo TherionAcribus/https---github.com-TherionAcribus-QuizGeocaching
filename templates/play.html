@@ -33,50 +33,6 @@
 
     {% set start_redirect_url = url_for('play_quiz', rule_set=rule_set.slug, auto_start=1) if rule_set else url_for('play_quiz', auto_start=1) %}
 
-    <div class="rule-details">
-        <h3>Règles appliquées</h3>
-        <ul>
-            <li><strong>Timer:</strong> {{ rule_set.timer_seconds }} secondes par question</li>
-            {% set diffs = rule_set.get_allowed_difficulties() %}
-            {% if diffs %}
-            <li><strong>Difficultés:</strong> {{ diffs|join(', ') }}</li>
-            {% else %}
-            <li><strong>Difficultés:</strong> toutes</li>
-            {% endif %}
-            {% set qmap = rule_set.get_questions_per_difficulty() %}
-            {% if qmap %}
-            <li><strong>Nombre de questions par difficulté:</strong> {{ qmap|tojson }}</li>
-            {% endif %}
-            {% if not rule_set.use_all_broad_themes %}
-            <li><strong>Thèmes larges:</strong>
-                {% for theme in rule_set.allowed_broad_themes %}
-                {{ theme.name }}{% if not loop.last %}, {% endif %}
-                {% endfor %}
-            </li>
-            {% endif %}
-            {% if not rule_set.use_all_specific_themes %}
-            <li><strong>Sous-thèmes:</strong>
-                {% for st in rule_set.allowed_specific_themes %}
-                {{ st.name }}{% if not loop.last %}, {% endif %}
-                {% endfor %}
-            </li>
-            {% endif %}
-            <li><strong>Scoring:</strong> {{ rule_set.scoring_base_points }} points par question
-                {% if rule_set.scoring_difficulty_bonus_type == 'add' %}
-                + bonus difficulté {{ rule_set.get_difficulty_bonus_map()|tojson }}
-                {% elif rule_set.scoring_difficulty_bonus_type == 'mult' %}
-                × coefficient difficulté {{ rule_set.get_difficulty_bonus_map()|tojson }}
-                {% endif %}
-                {% if rule_set.combo_bonus_enabled %}
-                + combo (palier {{ rule_set.combo_step }}, +{{ rule_set.combo_bonus_points }})
-                {% endif %}
-                {% if rule_set.perfect_quiz_bonus %}
-                +{{ rule_set.perfect_quiz_bonus }} si perfect
-                {% endif %}
-            </li>
-        </ul>
-    </div>
-
     <div class="quiz-start" id="play-start-wrapper" data-has-user="{{ 'true' if current_user else 'false' }}" data-auto-start="{{ 'true' if auto_start else 'false' }}">
         {% if current_user %}
         <button class="btn btn-primary btn-large"
@@ -138,6 +94,50 @@
                 (temporaire pour cette session)
             {% endif %}
         </small>
+    </div>
+
+    <div class="rule-details">
+        <h3>Règles appliquées</h3>
+        <ul>
+            <li><strong>Timer:</strong> {{ rule_set.timer_seconds }} secondes par question</li>
+            {% set diffs = rule_set.get_allowed_difficulties() %}
+            {% if diffs %}
+            <li><strong>Difficultés:</strong> {{ diffs|join(', ') }}</li>
+            {% else %}
+            <li><strong>Difficultés:</strong> toutes</li>
+            {% endif %}
+            {% set qmap = rule_set.get_questions_per_difficulty() %}
+            {% if qmap %}
+            <li><strong>Nombre de questions par difficulté:</strong> {{ qmap|tojson }}</li>
+            {% endif %}
+            {% if not rule_set.use_all_broad_themes %}
+            <li><strong>Thèmes larges:</strong>
+                {% for theme in rule_set.allowed_broad_themes %}
+                {{ theme.name }}{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            </li>
+            {% endif %}
+            {% if not rule_set.use_all_specific_themes %}
+            <li><strong>Sous-thèmes:</strong>
+                {% for st in rule_set.allowed_specific_themes %}
+                {{ st.name }}{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            </li>
+            {% endif %}
+            <li><strong>Scoring:</strong> {{ rule_set.scoring_base_points }} points par question
+                {% if rule_set.scoring_difficulty_bonus_type == 'add' %}
+                + bonus difficulté {{ rule_set.get_difficulty_bonus_map()|tojson }}
+                {% elif rule_set.scoring_difficulty_bonus_type == 'mult' %}
+                × coefficient difficulté {{ rule_set.get_difficulty_bonus_map()|tojson }}
+                {% endif %}
+                {% if rule_set.combo_bonus_enabled %}
+                + combo (palier {{ rule_set.combo_step }}, +{{ rule_set.combo_bonus_points }})
+                {% endif %}
+                {% if rule_set.perfect_quiz_bonus %}
+                +{{ rule_set.perfect_quiz_bonus }} si perfect
+                {% endif %}
+            </li>
+        </ul>
     </div>
 
     <div class="rule-actions">
