@@ -3318,6 +3318,10 @@ def _generate_quiz_playlist(rule_set: QuizRuleSet, current_user_id: int | None) 
         qmap = rule_set.get_questions_per_difficulty() or {}
         allowed_diffs = rule_set.get_allowed_difficulties() or [1, 2, 3, 4, 5]
         print(f"[QUIZ PLAYLIST] Mode AUTO: difficultés {allowed_diffs}, quotas {qmap}")
+        order_mode = getattr(rule_set, 'question_order_mode', 'difficulty_ascending') or 'difficulty_ascending'
+        if order_mode not in ['difficulty_ascending', 'full_shuffle']:
+            order_mode = 'difficulty_ascending'
+        print(f"[QUIZ PLAYLIST] Ordre des questions: {order_mode}")
 
         # Construire la requête de base selon le set de règles
         base_params = {'rule_set': rule_set.slug}
@@ -3366,8 +3370,20 @@ def _generate_quiz_playlist(rule_set: QuizRuleSet, current_user_id: int | None) 
                 for condition in stats['conditions_met']:
                     print(f"[QUIZ PLAYLIST]     {condition}")
 
-        # Intercaler pour varier
-        playlist = _interleave_round_robin(per_diff_ids)
+        # Construire la playlist selon le mode d'ordre choisi
+        if order_mode == 'full_shuffle':
+            playlist = []
+            for diff in per_diff_ids:
+                playlist.extend(per_diff_ids[diff])
+            random.shuffle(playlist)
+        else:
+            playlist = []
+            for diff in sorted(per_diff_ids.keys()):
+                bucket = list(per_diff_ids.get(diff) or [])
+                if len(bucket) > 1:
+                    random.shuffle(bucket)
+                playlist.extend(bucket)
+
         expected_total = sum(int(qmap.get(str(d), 0) or 0) for d in allowed_diffs)
         
         # Logs finaux
@@ -4144,7 +4160,8 @@ def _load_quiz_rule_defaults():
         'combo_bonus_points': 5,
         'perfect_quiz_bonus': 50,
         'intro_message': 'Bonne chance ! 🍀',
-        'success_message': 'Félicitations ! 🎉'
+        'success_message': 'Félicitations ! 🎉',
+        'question_order_mode': 'difficulty_ascending'
     }
 
 
@@ -4199,6 +4216,9 @@ def create_quiz_rule():
             return "Nom requis", 400
 
         slug = (data.get('slug') or '').strip() or _slugify(name)
+        order_mode = (data.get('question_order_mode') or 'difficulty_ascending').strip() or 'difficulty_ascending'
+        if order_mode not in ['difficulty_ascending', 'full_shuffle']:
+            order_mode = 'difficulty_ascending'
 
         created_by_user_id = g.current_user.id if getattr(g, 'current_user', None) else None
         rule = QuizRuleSet(
@@ -4225,6 +4245,7 @@ def create_quiz_rule():
             intro_image_id=(int(data.get('intro_image_id')) if (data.get('intro_image_id') or '').isdigit() else None),
             success_image_id=(int(data.get('success_image_id')) if (data.get('success_image_id') or '').isdigit() else None),
             failure_image_id=(int(data.get('failure_image_id')) if (data.get('failure_image_id') or '').isdigit() else None),
+            question_order_mode=order_mode
         )
 
         # Difficultés autorisées
@@ -4347,6 +4368,11 @@ def update_quiz_rule(rule_id: int):
         rule.combo_bonus_points = (int(data.get('combo_bonus_points')) if data.get('combo_bonus_points') else None)
         rule.perfect_quiz_bonus = int(data.get('perfect_quiz_bonus') or rule.perfect_quiz_bonus or 0)
         rule.min_correct_answers_to_win = int(data.get('min_correct_answers_to_win') or rule.min_correct_answers_to_win or 0)
+        order_mode = (data.get('question_order_mode') or rule.question_order_mode or 'difficulty_ascending').strip()
+        if order_mode not in ['difficulty_ascending', 'full_shuffle']:
+            order_mode = 'difficulty_ascending'
+        rule.question_order_mode = order_mode
+
         rule.intro_message = (data.get('intro_message') or '').strip() or None
         rule.success_message = (data.get('success_message') or '').strip() or None
         rule.failure_message = (data.get('failure_message') or '').strip() or None

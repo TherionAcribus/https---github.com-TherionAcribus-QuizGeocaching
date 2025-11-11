@@ -640,6 +640,11 @@ class QuizRuleSet(db.Model):
     # 'manual' = sélection manuelle d'une liste de questions spécifiques
     question_selection_mode = db.Column(db.String(20), nullable=False, default='auto')
 
+    # Ordre des questions générées (auto uniquement)
+    # 'difficulty_ascending' = difficultés regroupées et triées (par défaut)
+    # 'full_shuffle' = toutes difficultés entièrement mélangées
+    question_order_mode = db.Column(db.String(30), nullable=False, default='difficulty_ascending')
+
     # Pays utilisés (tous ou sélection) - utilisé uniquement en mode 'auto'
     use_all_countries = db.Column(db.Boolean, nullable=False, default=True)
     allowed_countries = db.relationship(

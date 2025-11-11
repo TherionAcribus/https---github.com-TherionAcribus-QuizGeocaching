@@ -136,6 +136,25 @@
                                 <span class="mode-description">Toutes les questions correspondant aux critères seront utilisées</span>
                             </div>
 
+                            {% set order_mode = rule.question_order_mode if rule else defaults.get('question_order_mode', 'difficulty_ascending') %}
+                            <div class="form-group question-order-group">
+                                <label>Ordre des questions (mode automatique)</label>
+                                <div class="radio-group">
+                                    <label class="radio-option">
+                                        <input type="radio" name="question_order_mode" value="difficulty_ascending"
+                                               {% if order_mode == 'difficulty_ascending' %}checked{% endif %}>
+                                        <span class="option-title">Difficulté croissante</span>
+                                        <span class="option-description">Les questions sont mélangées à l'intérieur de chaque niveau mais les niveaux restent triés du plus facile au plus difficile.</span>
+                                    </label>
+                                    <label class="radio-option">
+                                        <input type="radio" name="question_order_mode" value="full_shuffle"
+                                               {% if order_mode == 'full_shuffle' %}checked{% endif %}>
+                                        <span class="option-title">Mélange complet</span>
+                                        <span class="option-description">Toutes les difficultés sont entièrement mélangées pour une progression plus imprévisible.</span>
+                                    </label>
+                                </div>
+                            </div>
+
                             <div id="questions-table-container">
                                 <table class="questions-selection-table">
                                     <thead>
@@ -1792,6 +1811,13 @@ select.answer-image-select option {
 .mode-auto{background:#d4edda;color:#155724;border:1px solid #c3e6cb}
 .mode-manual{background:#fff3cd;color:#856404;border:1px solid #ffeaa7}
 .mode-description{font-size:.875rem;color:var(--text-light);flex:1}
+.question-order-group{margin-bottom:1rem}
+.radio-group{display:flex;flex-direction:column;gap:.75rem}
+.radio-option{display:flex;gap:.75rem;align-items:flex-start;padding:.75rem;border:1px solid var(--border-color);border-radius:.5rem;background:#fff;transition:border-color .2s ease,box-shadow .2s ease}
+.radio-option:hover{border-color:var(--primary-color);box-shadow:0 0 0 3px rgba(13,148,136,0.1)}
+.radio-option input{margin-top:.35rem}
+.option-title{font-weight:600;color:var(--text-color)}
+.option-description{font-size:.85rem;color:var(--text-light)}
 #questions-table-container{max-height:500px;overflow:auto;border:1px solid var(--border-color);border-radius:.5rem}
 .questions-selection-table{width:100%;border-collapse:collapse;font-size:.9rem}
 .questions-selection-table thead{position:sticky;top:0;background:var(--card-bg);z-index:10;box-shadow:0 2px 4px rgba(0,0,0,.1)}
