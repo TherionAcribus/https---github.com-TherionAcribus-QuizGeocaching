@@ -146,13 +146,14 @@
     </div>
 
     {% if not is_last_question %}
-    <div class="quick-next-mobile">
-        <button class="btn btn-primary btn-mobile" type="button"
+    <div class="quick-next-mobile" role="presentation">
+        <button class="btn-mobile" type="button"
+                aria-label="Question suivante"
                 hx-get="/api/quiz/next"
                 hx-target="#quiz-stage"
                 hx-swap="innerHTML"
                 hx-vals='{"history": "{{ history }}"{% if rule_set %}, "rule_set": "{{ rule_set.slug }}"{% endif %}, "quick_double_click": "{{ 'true' if quick_double_click else 'false' }}"}'>
-            ↪ Question suivante
+            <span aria-hidden="true">&gt;</span>
         </button>
     </div>
     {% endif %}
