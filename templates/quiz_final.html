@@ -1,9 +1,9 @@
 {% set page_title = 'Fin du quiz' %}
 <div class="quiz-game-container">
     <div class="quiz-summary-card">
-        <h2 class="summary-title">🏁 Fin du quiz</h2>
+        <h2 class="summary-title">Fin du quiz</h2>
         {% if rule_set %}
-        <div class="summary-subtitle">Mode: <strong>{{ rule_set.name }}</strong></div>
+        <div class="summary-subtitle">Quiz: <strong>{{ rule_set.name }}</strong></div>
         {% endif %}
 
         {% if rule_set %}
@@ -117,9 +117,9 @@
                     hx-target="#quiz-stage"
                     hx-swap="innerHTML"
                     hx-vals='{"history": ""{% if rule_set %}, "rule_set": "{{ rule_set.slug }}"{% endif %}}'>
-                🔁 Rejouer un nouveau quiz
+                🔁 Rejouer un Quiz
             </button>
-            <a href="/play" class="btn">Changer de mode</a>
+            <a href="/play" class="btn">Changer de Quiz</a>
         </div>
     </div>
 
