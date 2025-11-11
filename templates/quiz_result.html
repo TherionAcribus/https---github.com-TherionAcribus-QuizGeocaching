@@ -747,6 +747,42 @@
             font-size: 1.1rem;
             padding: 0.875rem 1.5rem;
         }
+
+        .quick-next-mobile {
+            display: flex;
+            position: fixed;
+            top: 50%;
+            right: 1.25rem;
+            transform: translateY(-50%);
+            z-index: 2000;
+        }
+
+        .quick-next-mobile .btn-mobile {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            height: 60px;
+            border-radius: 999px;
+            background: #16a34a;
+            border: 3px solid #bbf7d0;
+            color: white;
+            font-size: 2rem;
+            font-weight: 700;
+            box-shadow: 0 25px 45px rgba(22, 163, 74, 0.35);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .quick-next-mobile .btn-mobile:hover,
+        .quick-next-mobile .btn-mobile:focus {
+            transform: scale(1.05);
+            box-shadow: 0 30px 60px rgba(22, 163, 74, 0.45);
+        }
+
+        .quick-next-mobile .btn-mobile:focus {
+            outline: 3px solid rgba(134, 239, 172, 0.9);
+            outline-offset: 3px;
+        }
     }
 
     @media (max-width: 480px) {
