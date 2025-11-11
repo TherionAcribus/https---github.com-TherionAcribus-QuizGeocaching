@@ -85,7 +85,9 @@
             {% set answers = question.possible_answers.split('|||') %}
             <div class="answers-summary">
                 {% for answer in answers %}
-                <div class="answer-summary-item {% if loop.index == question.correct_answer|int %}correct{% else %}incorrect{% endif %}">
+                {% set is_correct_answer = (loop.index == question.correct_answer|int) %}
+                {% set is_user_choice = (loop.index == selected|int) %}
+                <div class="answer-summary-item{% if is_correct_answer %} correct{% else %} incorrect{% endif %}{% if is_user_choice %} user-choice{% endif %}{% if is_user_choice and not is_correct_answer %} user-choice-error{% endif %}">
                     <span class="answer-num">{{ loop.index }}</span>
                     <div class="answer-content">
                         {% set link = (question.answer_image_links | selectattr('answer_index','equalto', loop.index) | list) %}
@@ -142,6 +144,18 @@
             {% if is_last_question %}Voir mon score{% else %}Question suivante{% endif %}
         </button>
     </div>
+
+    {% if not is_last_question %}
+    <div class="quick-next-mobile">
+        <button class="btn btn-primary btn-mobile" type="button"
+                hx-get="/api/quiz/next"
+                hx-target="#quiz-stage"
+                hx-swap="innerHTML"
+                hx-vals='{"history": "{{ history }}"{% if rule_set %}, "rule_set": "{{ rule_set.slug }}"{% endif %}, "quick_double_click": "{{ 'true' if quick_double_click else 'false' }}"}'>
+            ↪ Question suivante
+        </button>
+    </div>
+    {% endif %}
 
     <!-- Modale de confirmation pour quitter le quiz -->
     <div id="quit-modal" class="modal-overlay" style="display: none;">
@@ -513,9 +527,24 @@
     }
 
     .your-choice {
-        color: #ef4444;
+        color: #b91c1c;
         font-weight: 500;
         font-style: italic;
+    }
+
+    .answer-summary-item.user-choice {
+        box-shadow: 0 0 0 2px rgba(59,130,246,0.35);
+    }
+
+    .answer-summary-item.user-choice .your-choice {
+        color: #b91c1c;
+        font-weight: 600;
+    }
+
+    .answer-summary-item.user-choice-error {
+        border-color: #ef4444;
+        background: #fee2e2;
+        box-shadow: 0 10px 30px rgba(239,68,68,0.2);
     }
 
     .correct-indicator {
@@ -594,11 +623,19 @@
         flex-wrap: wrap;
     }
 
-    .btn-large {
-        font-size: 1.2rem;
-        padding: 1rem 2rem;
-        border-radius: 0.75rem;
-        font-weight: 600;
+    .quick-next-mobile {
+        display: flex;
+        justify-content: center;
+        position: fixed;
+        bottom: 1.25rem;
+        left: 0;
+        right: 0;
+        z-index: 2000;
+    }
+
+    .quick-next-mobile .btn-mobile {
+        width: 75%;
+        max-width: 340px;
     }
 
     .result-stats {
