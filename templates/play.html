@@ -88,11 +88,6 @@
         </label>
         <small class="option-description">
             Double-cliquez sur une réponse pour la valider automatiquement
-            {% if current_user and current_user.get_preferences().get('double_click_validation', False) %}
-                (activé par défaut dans vos préférences)
-            {% else %}
-                (temporaire pour cette session)
-            {% endif %}
         </small>
     </div>
 

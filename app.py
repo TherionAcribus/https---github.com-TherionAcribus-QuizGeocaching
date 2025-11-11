@@ -3433,10 +3433,11 @@ def _get_user_double_click_preference() -> bool:
     try:
         if getattr(g, 'current_user', None):
             prefs = g.current_user.get_preferences()
-            return bool(prefs.get('double_click_validation', False))
+            if 'double_click_validation' in prefs:
+                return bool(prefs.get('double_click_validation'))
     except Exception:
         pass
-    return False
+    return True
 
 
 @app.route('/play')
