@@ -63,8 +63,10 @@
         </div>
 
         {% if score_breakdown %}
-        <div class="score-breakdown-card">
-            <h3 class="score-breakdown-title">📊 Détail du score</h3>
+        <details class="score-breakdown-card" id="score-breakdown-panel">
+            <summary class="score-breakdown-summary">
+                <span class="score-breakdown-title">📊 Détail du score</span>
+            </summary>
             <div class="score-breakdown-list">
                 {% for entry in score_breakdown %}
                 {% if entry.type == 'question' %}
@@ -105,7 +107,7 @@
                 {% endif %}
                 {% endfor %}
             </div>
-        </div>
+        </details>
         {% endif %}
 
         <div class="final-actions">
@@ -152,21 +154,45 @@
 
         .score-breakdown-card {
             margin: 2rem 0;
-            padding: 1.5rem;
+            padding: 0;
             border: 1px solid var(--border-color);
             border-radius: 1rem;
             background: rgba(15,118,110,0.04);
             text-align: left;
+            overflow: hidden;
+        }
+        .score-breakdown-card > summary {
+            list-style: none;
+        }
+        .score-breakdown-card[open] > summary .chevron {
+            transform: rotate(180deg);
+        }
+        .score-breakdown-summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 1.25rem 1.5rem;
+            cursor: pointer;
+            user-select: none;
+        }
+        .score-breakdown-summary:hover {
+            background: rgba(15,118,110,0.08);
         }
         .score-breakdown-title {
-            margin: 0 0 1rem 0;
+            margin: 0;
             color: var(--primary-color);
             font-size: 1.2rem;
+            font-weight: 600;
+        }
+        .score-breakdown-summary .chevron {
+            transition: transform 0.2s ease;
         }
         .score-breakdown-list {
             display: flex;
             flex-direction: column;
             gap: 0.75rem;
+            padding: 1.25rem 1.5rem 1.75rem;
         }
         .breakdown-item {
             display: flex;
