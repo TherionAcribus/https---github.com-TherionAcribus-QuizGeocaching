@@ -1,0 +1,97 @@
+<!-- Page À propos présentant les intentions de CacheQuiz. -->
+{% extends "base_public.html" %}
+
+{% block title %}À propos - CacheQuiz{% endblock %}
+
+{% block content %}
+<section class="about-page">
+
+    <article class="about-sections">
+        <section class="about-section">
+            <div class="about-section-header">
+                <span class="about-section-accent" aria-hidden="true"></span>
+                <h3 class="about-section-title">L’esprit du projet</h3>
+            </div>
+            <div class="about-section-content">
+                <p>Bonjour à tous&nbsp;!</p>
+                <p>
+                    Bienvenue sur CacheQuiz&nbsp;! Ce site est un petit projet sans prétention pour apprendre quelques
+                    faits sur le géocaching et tester vos connaissances. N'hésitez pas à me contacter si vous avez des
+                    questions, des suggestions ou si vous repérez des erreurs dans les questions.
+                </p>
+                <p>
+                    Ce projet de quiz devait au départ n'être qu'une page incluse dans mon blog «&nbsp;Des Tours, des détours et du Géocaching&nbsp;». Mais une chose en entraînant une autre, j'ai décidé d'en faire un site indépendant pour ajouter des fonctions qu'il aurait été difficile d'intégrer au blog. Et puisque le quiz est désormais autonome, d'autres fonctionnalités deviennent envisageables.
+                </p>
+                <p>
+                    Merci de noter que je ne suis pas développeur professionnel&nbsp;: le site est encore en
+                    construction et s'améliore en continu.
+                </p>
+            </div>
+        </section>
+
+        <section class="about-section">
+            <div class="about-section-header">
+                <span class="about-section-accent" aria-hidden="true"></span>
+                <h3 class="about-section-title">Ce qui arrive prochainement</h3>
+            </div>
+            <div class="about-section-content">
+                <p>
+                    Voici quelques évolutions prévues (dans un ordre aléatoire et avec un timing chaotique) :
+                </p>
+                <ul class="about-roadmap-list">
+                    <li>
+                        <span class="about-roadmap-bullet" aria-hidden="true"></span>
+                        <p>Création de quiz personnalisés pour vos énigmes&nbsp;: en piochant dans la base existante ou en rédigeant vos propres questions.</p>
+                    </li>
+                    <li>
+                        <span class="about-roadmap-bullet" aria-hidden="true"></span>
+                        <p>Traduction de l'interface et des questions (anglais en premier, puis éventuellement dans d'autres langues).</p>
+                    </li>
+                    <li>
+                        <span class="about-roadmap-bullet" aria-hidden="true"></span>
+                        <p>Modes multijoueurs pour vos animations, par exemple lors d'Events.</p>
+                    </li>
+                    <li>
+                        <span class="about-roadmap-bullet" aria-hidden="true"></span>
+                        <p>Variations de gameplay pour diversifier l'expérience au-delà du quiz classique.</p>
+                    </li>
+                    <li>
+                        <span class="about-roadmap-bullet" aria-hidden="true"></span>
+                        <p>Statistiques plus riches et plus visuelles pour les joueuses et joueurs.</p>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="about-section">
+            <div class="about-section-header">
+                <span class="about-section-accent" aria-hidden="true"></span>
+                <h3 class="about-section-title">Ce qui est déjà disponible</h3>
+            </div>
+            <div class="about-section-content">
+                <p>Voici ce que vous pouvez déjà utiliser sur CacheQuiz :</p>
+                <ul class="about-summary-list">
+                    <li>Un système de quiz fonctionnel, pensé pour une utilisation mobile et desktop.</li>
+                    <li>Un outil pratique (pour moi et bientôt pour vous) pour créer des questions, associer des images et assembler des quiz.</li>
+                    <li>Une messagerie intégrée pour signaler des erreurs ou partager vos remarques.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="about-section">
+            <div class="about-section-header">
+                <span class="about-section-accent" aria-hidden="true"></span>
+                <h3 class="about-section-title">Pourquoi ce projet&nbsp;?</h3>
+            </div>
+            <div class="about-section-content">
+                <p>
+                    À plus long terme, CacheQuiz sert de laboratoire pour concevoir une application de quiz open source et gratuite utilisable pour n'importe quel domaine. Ce site me permet de tester ce qui fonctionne ou non et d'affiner le fonctionnement.
+                </p>
+                <p class="about-section-note">
+                    Merci de faire partie de ce voyage et bonne exploration géocaching&nbsp;!
+                </p>
+            </div>
+        </section>
+    </article>
+</section>
+{% endblock %}

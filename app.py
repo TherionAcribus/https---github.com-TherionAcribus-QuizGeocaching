@@ -1025,6 +1025,12 @@ def index():
     return render_template('home_public.html')
 
 
+@app.route('/a-propos')
+def about_page():
+    """Page publique présentant les intentions et la vision de CacheQuiz."""
+    return render_template('about.html')
+
+
 @app.route('/contact', methods=['GET', 'POST'])
 def contact_page():
     print(f"[CONTACT] Method: {request.method}")
