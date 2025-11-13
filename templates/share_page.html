@@ -1,0 +1,356 @@
+{% extends "base_public.html" %}
+
+{% block title %}{{ user.username if user else 'Un joueur' }} a scoré {{ total_score }} points au quiz {{ rule_set.name }}{% endblock %}
+
+{% block meta_tags %}
+<!-- Meta tags Open Graph optimisés pour le partage de résultats -->
+<meta name="description" content="{{ user.username if user else 'Un joueur' }} a obtenu {{ total_score }} points ({{ total_correct_answers }}/{{ total_questions }} bonnes réponses) au quiz {{ rule_set.name }}. Viens relever le défi !">
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="CacheQuiz">
+<meta property="og:title" content="🎯 {{ total_score }} points au quiz {{ rule_set.name }} !">
+<meta property="og:description" content="{{ user.username if user else 'Un joueur' }} a réussi {% if success %}✅{% else %}💪{% endif %} avec {{ total_correct_answers }}/{{ total_questions }} bonnes réponses{% if perfect_bonus_added %} (Quiz parfait ! 🏆){% endif %}. Teste tes connaissances toi aussi !">
+<meta property="og:url" content="{{ request.url }}">
+{% if rule_set.intro_image %}
+<meta property="og:image" content="{{ request.url_root[:-1] }}{{ rule_set.intro_image.url }}">
+<meta property="og:image:alt" content="Quiz {{ rule_set.name }}">
+{% else %}
+<meta property="og:image" content="{{ request.url_root }}static/images/logo_geoquiz.png">
+{% endif %}
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="🎯 {{ total_score }} points au quiz {{ rule_set.name }} !">
+<meta name="twitter:description" content="{{ user.username if user else 'Un joueur' }} : {{ total_correct_answers }}/{{ total_questions }} bonnes réponses{% if perfect_bonus_added %} (Parfait ! 🏆){% endif %}">
+{% if rule_set.intro_image %}
+<meta name="twitter:image" content="{{ request.url_root[:-1] }}{{ rule_set.intro_image.url }}">
+{% else %}
+<meta name="twitter:image" content="{{ request.url_root }}static/images/logo_geoquiz.png">
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="share-result-page">
+    <div class="share-card">
+        <!-- Header avec statut -->
+        <div class="share-header">
+            {% if success %}
+            <div class="share-status success">
+                <span class="status-icon">🎉</span>
+                <h2>Quiz réussi !</h2>
+            </div>
+            {% else %}
+            <div class="share-status attempt">
+                <span class="status-icon">💪</span>
+                <h2>Belle tentative !</h2>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Informations utilisateur -->
+        {% if user %}
+        <div class="share-user-info">
+            <div class="user-avatar">{{ user.username[0].upper() }}</div>
+            <div class="user-details">
+                <h3>{{ user.username }}</h3>
+                <p class="user-subtitle">a terminé ce quiz</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Score principal -->
+        <div class="share-score-display">
+            <div class="score-main">
+                <span class="score-value">{{ total_score }}</span>
+                <span class="score-label">points</span>
+            </div>
+            <div class="score-details">
+                <div class="detail-item">
+                    <span class="detail-icon">✅</span>
+                    <span class="detail-value">{{ total_correct_answers }}/{{ total_questions }}</span>
+                    <span class="detail-label">bonnes réponses</span>
+                </div>
+                {% if perfect_bonus_added %}
+                <div class="detail-item perfect">
+                    <span class="detail-icon">🏆</span>
+                    <span class="detail-value">Parfait</span>
+                    <span class="detail-label">Aucune erreur !</span>
+                </div>
+                {% endif %}
+                {% if combo_max > 1 %}
+                <div class="detail-item">
+                    <span class="detail-icon">🔥</span>
+                    <span class="detail-value">×{{ combo_max }}</span>
+                    <span class="detail-label">meilleur combo</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Informations du quiz -->
+        <div class="share-quiz-info">
+            <h3>{{ rule_set.name }}</h3>
+            {% if rule_set.description %}
+            <p class="quiz-description">{{ rule_set.description|striptags|truncate(200) }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Call to action -->
+        <div class="share-cta">
+            <a href="{{ url_for('track_share_click', share_uuid=share_link.uuid) }}" 
+               class="btn btn-primary btn-large cta-button">
+                🎮 Relever le défi !
+            </a>
+            <p class="cta-subtitle">Teste tes connaissances toi aussi</p>
+        </div>
+
+        <!-- Statistiques du partage (optionnel, discret) -->
+        {% if share_link.view_count > 1 %}
+        <div class="share-stats">
+            <small>👀 {{ share_link.view_count }} vues</small>
+        </div>
+        {% endif %}
+    </div>
+
+    <style>
+        .share-result-page {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .share-card {
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 1.5rem;
+            padding: 0;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            overflow: hidden;
+        }
+
+        .share-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #6366f1 100%);
+            padding: 2rem;
+            text-align: center;
+            color: white;
+        }
+
+        .share-status {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .status-icon {
+            font-size: 3rem;
+            animation: bounce 1s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .share-header h2 {
+            margin: 0;
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+
+        .share-user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .user-avatar {
+            width: 3.5rem;
+            height: 3.5rem;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #6366f1 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .user-details h3 {
+            margin: 0;
+            color: var(--text-color);
+            font-size: 1.25rem;
+        }
+
+        .user-subtitle {
+            margin: 0.25rem 0 0 0;
+            color: var(--muted-color);
+            font-size: 0.9rem;
+        }
+
+        .share-score-display {
+            padding: 2rem;
+            text-align: center;
+            background: linear-gradient(135deg, rgba(15,118,110,0.05) 0%, rgba(99,102,241,0.05) 100%);
+        }
+
+        .score-main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .score-value {
+            font-size: 4rem;
+            font-weight: 800;
+            color: var(--primary-color);
+            line-height: 1;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .score-label {
+            font-size: 1.25rem;
+            color: var(--muted-color);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .score-details {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.75rem 1rem;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            min-width: 120px;
+        }
+
+        .detail-item.perfect {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-color: #fbbf24;
+        }
+
+        .detail-icon {
+            font-size: 1.5rem;
+        }
+
+        .detail-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+
+        .detail-label {
+            font-size: 0.75rem;
+            color: var(--muted-color);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .share-quiz-info {
+            padding: 2rem;
+            text-align: center;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .share-quiz-info h3 {
+            margin: 0 0 0.75rem 0;
+            color: var(--primary-color);
+            font-size: 1.5rem;
+        }
+
+        .quiz-description {
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .share-cta {
+            padding: 2rem;
+            text-align: center;
+            background: linear-gradient(135deg, rgba(15,118,110,0.08) 0%, rgba(99,102,241,0.08) 100%);
+        }
+
+        .cta-button {
+            font-size: 1.25rem;
+            padding: 1rem 2.5rem;
+            border-radius: 0.75rem;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+        }
+
+        .cta-subtitle {
+            margin: 1rem 0 0 0;
+            color: var(--muted-color);
+            font-size: 0.95rem;
+        }
+
+        .share-stats {
+            padding: 1rem 2rem;
+            text-align: center;
+            border-top: 1px solid var(--border-color);
+            color: var(--muted-color);
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .share-card {
+                border-radius: 1rem;
+            }
+
+            .share-header {
+                padding: 1.5rem;
+            }
+
+            .status-icon {
+                font-size: 2.5rem;
+            }
+
+            .share-header h2 {
+                font-size: 1.5rem;
+            }
+
+            .score-value {
+                font-size: 3rem;
+            }
+
+            .score-details {
+                gap: 0.75rem;
+            }
+
+            .detail-item {
+                min-width: 100px;
+                padding: 0.5rem 0.75rem;
+            }
+
+            .cta-button {
+                font-size: 1.1rem;
+                padding: 0.875rem 2rem;
+            }
+        }
+    </style>
+</div>
+{% endblock %}

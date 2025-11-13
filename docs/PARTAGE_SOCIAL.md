@@ -209,14 +209,51 @@ Utiliser le [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/) 
 - **Minimum** : 600×315 pixels
 - **Format** : JPG, PNG (max 8 MB)
 
+## ✅ Liens de Partage Personnalisés avec UUID IMPLÉMENTÉS
+
+### Concept
+
+Au lieu de partager un lien générique vers le quiz, le système génère maintenant **une page unique pour chaque partage** avec un UUID. Cette page affiche visuellement le score et possède ses propres meta tags Open Graph.
+
+### Workflow
+
+1. Utilisateur clique sur un bouton de partage
+2. Appel API : `POST /api/quiz/create-share-link`
+3. Création d'un `QuizShareLink` avec UUID en base
+4. Utilisation de l'URL `/share/<uuid>` pour le partage
+5. Facebook/Twitter scrape cette URL et affiche le score dans l'aperçu !
+
+### Avantages
+
+- ✅ **Score affiché dans l'aperçu** : Facebook/Twitter voient le score exact
+- ✅ **Page dédiée magnifique** : Design attractif pour inciter à jouer
+- ✅ **Statistiques** : Vues et clics trackés
+- ✅ **Lien permanent** : Le résultat reste accessible
+- ✅ **Meta tags personnalisés** : "🎯 1250 points au quiz !"
+
+### Fichiers créés
+
+- **Modèle** : `models.py` → classe `QuizShareLink`
+- **Routes** : `app.py` → `/api/quiz/create-share-link`, `/share/<uuid>`, `/share/<uuid>/click`
+- **Templates** : `share_page.html`, `share_not_found.html`, `share_expired.html`
+- **Controller** : `share_controller.js` → méthode `createShareLink()`
+- **Migration** : `migrations/create_share_links_table.py`
+- **Documentation** : `docs/LIENS_PARTAGE_UUID.md` (guide complet)
+
+### Migration de la base
+
+```bash
+python migrations/create_share_links_table.py
+```
+
 ## Améliorations futures possibles
 
 1. **Image dynamique avec score** ✨ NOUVEAU PRIORITAIRE
-   - Générer une image dynamique pour la page de résultats
-   - Afficher le score visuellement dans l'image partagée
-   - Utiliser une bibliothèque comme Pillow pour générer l'image
+   - Générer une image dynamique avec le score pour l'aperçu
+   - Utiliser une bibliothèque comme Pillow
+   - Format optimal : 1200×630px
 
-2. **Statistiques de partage** : Traquer combien de fois un quiz est partagé
+2. **Leaderboard sur la page de partage** : "Tu as fait mieux que 73% des joueurs"
 3. **Boutons supplémentaires** : LinkedIn, WhatsApp, etc.
-4. **Personnalisation** : Permettre à l'admin de configurer le message de partage
-5. **Preview en temps réel** : Afficher un aperçu du partage avant de publier
+4. **Dashboard analytics** : Visualisation des stats de partage pour les admins
+5. **Badges et achievements** : Afficher sur la page de partage

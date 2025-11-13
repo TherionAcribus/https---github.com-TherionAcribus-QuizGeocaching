@@ -1,0 +1,70 @@
+{% extends "base_public.html" %}
+
+{% block title %}Partage introuvable - CacheQuiz{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <div class="error-card">
+        <div class="error-icon">🔍</div>
+        <h2>Partage introuvable</h2>
+        <p>Ce lien de partage n'existe pas ou a été supprimé.</p>
+        <div class="error-actions">
+            <a href="/play" class="btn btn-primary">Découvrir les quiz</a>
+            <a href="/" class="btn btn-secondary">Retour à l'accueil</a>
+        </div>
+    </div>
+
+    <style>
+        .error-page {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 60vh;
+            padding: 2rem 1rem;
+        }
+
+        .error-card {
+            max-width: 500px;
+            text-align: center;
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 3rem 2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .error-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .error-card h2 {
+            color: var(--primary-color);
+            margin: 0 0 1rem 0;
+        }
+
+        .error-card p {
+            color: var(--text-color);
+            margin: 0 0 2rem 0;
+            line-height: 1.6;
+        }
+
+        .error-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 640px) {
+            .error-actions {
+                flex-direction: column;
+            }
+
+            .error-actions .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</div>
+{% endblock %}

@@ -11,8 +11,14 @@ export default class extends Controller {
         totalQuestions: Number,
         quizName: String,
         quizSlug: String,
-        success: Boolean
+        success: Boolean,
+        perfectBonus: Boolean,
+        comboMax: Number
     }
+
+    // Cache pour stocker l'UUID du lien de partage créé
+    shareUuid = null
+    shareUrl = null
 
     /**
      * Génère le message de partage personnalisé
@@ -28,7 +34,50 @@ export default class extends Controller {
     }
 
     /**
-     * Génère l'URL complète du quiz
+     * Crée un lien de partage via l'API et retourne l'URL
+     */
+    async createShareLink(platform = null) {
+        // Si déjà créé, retourner l'URL en cache
+        if (this.shareUrl) {
+            return this.shareUrl
+        }
+
+        try {
+            const response = await fetch('/api/quiz/create-share-link', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    rule_set: this.quizSlugValue,
+                    total_score: this.scoreValue,
+                    total_correct_answers: this.correctAnswersValue,
+                    total_questions: this.totalQuestionsValue,
+                    success: this.successValue,
+                    perfect_bonus: this.perfectBonusValue || false,
+                    combo_max: this.comboMaxValue || 0,
+                    platform: platform
+                })
+            })
+
+            if (!response.ok) {
+                throw new Error('Erreur lors de la création du lien')
+            }
+
+            const data = await response.json()
+            this.shareUuid = data.uuid
+            this.shareUrl = data.url
+
+            return this.shareUrl
+        } catch (error) {
+            console.error('Erreur création lien de partage:', error)
+            // Fallback : utiliser l'ancienne méthode
+            return this.getQuizUrl()
+        }
+    }
+
+    /**
+     * Génère l'URL complète du quiz (fallback si l'API échoue)
      */
     getQuizUrl() {
         const baseUrl = window.location.origin
@@ -42,24 +91,30 @@ export default class extends Controller {
      */
     async shareOnFacebook(event) {
         event.preventDefault()
-        
-        const url = this.getQuizUrl()
-        const message = this.generateShareMessage()
         const button = event.currentTarget
+        const originalHTML = button.innerHTML
         
         try {
+            // Afficher un état de chargement
+            button.innerHTML = '<svg class="share-icon-svg" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" opacity="0.3"/></svg><span>Création...</span>'
+            button.disabled = true
+            
+            // Créer le lien de partage personnalisé
+            const url = await this.createShareLink('facebook')
+            
             // Copier le message dans le presse-papier
+            const message = this.generateShareMessage()
             await navigator.clipboard.writeText(message)
             
-            // Feedback visuel temporaire
-            const originalHTML = button.innerHTML
+            // Feedback visuel
             button.innerHTML = '<svg class="share-icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>Message copié !</span>'
             
             // Ouvrir Facebook après un court délai
             setTimeout(() => {
                 button.innerHTML = originalHTML
+                button.disabled = false
                 
-                // URL de partage Facebook (sans quote car Facebook l'ignore maintenant)
+                // URL de partage Facebook avec le lien personnalisé
                 const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`
                 
                 // Ouvrir dans une popup
@@ -67,29 +122,55 @@ export default class extends Controller {
             }, 1000)
             
         } catch (err) {
-            console.error('Erreur lors de la copie', err)
+            console.error('Erreur lors du partage Facebook', err)
             
-            // Si la copie échoue, ouvrir quand même Facebook
-            const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`
+            button.innerHTML = originalHTML
+            button.disabled = false
+            
+            // Fallback : utiliser l'ancienne méthode
+            const fallbackUrl = this.getQuizUrl()
+            const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(fallbackUrl)}`
             this.openShareWindow(facebookUrl, 'Partager sur Facebook')
-            
-            // Afficher un message d'info
-            alert('💡 Astuce : Facebook ne permet pas de pré-remplir le texte.\nVous pouvez copier votre message avec le bouton "Copier" puis le coller dans Facebook.')
         }
     }
 
     /**
      * Partage sur Twitter/X
      */
-    shareOnTwitter(event) {
+    async shareOnTwitter(event) {
         event.preventDefault()
+        const button = event.currentTarget
+        const originalHTML = button.innerHTML
         
-        const url = this.getQuizUrl()
-        const text = this.generateShareMessage()
-        
-        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`
-        
-        this.openShareWindow(twitterUrl, 'Partager sur Twitter')
+        try {
+            // Afficher un état de chargement
+            button.innerHTML = '<svg class="share-icon-svg" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" opacity="0.3"/></svg><span>Création...</span>'
+            button.disabled = true
+            
+            // Créer le lien de partage personnalisé
+            const url = await this.createShareLink('twitter')
+            const text = this.generateShareMessage()
+            
+            // Restaurer le bouton
+            button.innerHTML = originalHTML
+            button.disabled = false
+            
+            const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`
+            
+            this.openShareWindow(twitterUrl, 'Partager sur Twitter')
+            
+        } catch (err) {
+            console.error('Erreur lors du partage Twitter', err)
+            
+            button.innerHTML = originalHTML
+            button.disabled = false
+            
+            // Fallback
+            const fallbackUrl = this.getQuizUrl()
+            const text = this.generateShareMessage()
+            const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(fallbackUrl)}`
+            this.openShareWindow(twitterUrl, 'Partager sur Twitter')
+        }
     }
 
     /**

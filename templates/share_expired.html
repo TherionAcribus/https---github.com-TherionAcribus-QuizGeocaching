@@ -1,0 +1,83 @@
+{% extends "base_public.html" %}
+
+{% block title %}Partage expiré - CacheQuiz{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <div class="error-card">
+        <div class="error-icon">⏰</div>
+        <h2>Lien expiré</h2>
+        <p>Ce partage a expiré. Les liens de partage ont une durée de validité limitée.</p>
+        {% if share_link and share_link.quiz_rule_set %}
+        <p>Vous pouvez toujours jouer au quiz <strong>{{ share_link.quiz_rule_set.name }}</strong> :</p>
+        <div class="error-actions">
+            <a href="{{ url_for('play_quiz_by_slug', slug=share_link.quiz_rule_set.slug) }}" 
+               class="btn btn-primary">Jouer au quiz</a>
+            <a href="/play" class="btn btn-secondary">Tous les quiz</a>
+        </div>
+        {% else %}
+        <div class="error-actions">
+            <a href="/play" class="btn btn-primary">Découvrir les quiz</a>
+            <a href="/" class="btn btn-secondary">Retour à l'accueil</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <style>
+        .error-page {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 60vh;
+            padding: 2rem 1rem;
+        }
+
+        .error-card {
+            max-width: 500px;
+            text-align: center;
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 3rem 2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .error-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .error-card h2 {
+            color: var(--primary-color);
+            margin: 0 0 1rem 0;
+        }
+
+        .error-card p {
+            color: var(--text-color);
+            margin: 0 0 1rem 0;
+            line-height: 1.6;
+        }
+
+        .error-card p:last-of-type {
+            margin-bottom: 2rem;
+        }
+
+        .error-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 640px) {
+            .error-actions {
+                flex-direction: column;
+            }
+
+            .error-actions .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</div>
+{% endblock %}

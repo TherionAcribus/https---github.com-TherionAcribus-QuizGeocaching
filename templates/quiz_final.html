@@ -71,7 +71,9 @@
              data-share-total-questions-value="{{ total_questions }}"
              data-share-quiz-name-value="{{ rule_set.name }}"
              data-share-quiz-slug-value="{{ rule_set.slug }}"
-             data-share-success-value="{{ 'true' if total_correct_answers >= rule_set.min_correct_answers_to_win else 'false' }}">
+             data-share-success-value="{{ 'true' if total_correct_answers >= rule_set.min_correct_answers_to_win else 'false' }}"
+             data-share-perfect-bonus-value="{{ 'true' if perfect_bonus_added else 'false' }}"
+             data-share-combo-max-value="{{ score_breakdown | selectattr('combo_streak', 'defined') | map(attribute='combo_streak') | max | default(0) }}">
             
             <div class="share-header">
                 <span class="share-icon">🎯</span>

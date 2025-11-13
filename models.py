@@ -977,3 +977,84 @@ class ContactMessage(db.Model):
 
     def __repr__(self):
         return f"<ContactMessage id={self.id} from={self.visitor_name} status={self.status}>"
+
+
+# ===================== Liens de partage de résultats de quiz =====================
+
+class QuizShareLink(db.Model):
+    """
+    Modèle pour générer des liens de partage personnalisés avec UUID.
+    Permet d'afficher une page dédiée avec le score et les stats pour le partage sur réseaux sociaux.
+    """
+    __tablename__ = 'quiz_share_links'
+
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # UUID unique pour le lien de partage
+    uuid = db.Column(db.String(36), unique=True, nullable=False, index=True)
+    
+    # Dates
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=True)  # Optionnel : expiration du lien
+    
+    # Utilisateur qui a créé le partage
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    user = db.relationship('User', backref='share_links')
+    
+    # Quiz concerné
+    quiz_rule_set_id = db.Column(db.Integer, db.ForeignKey('quiz_rule_sets.id'), nullable=False)
+    quiz_rule_set = db.relationship('QuizRuleSet')
+    
+    # Résultats du quiz
+    total_score = db.Column(db.Integer, nullable=False)
+    total_correct_answers = db.Column(db.Integer, nullable=False)
+    total_questions = db.Column(db.Integer, nullable=False)
+    success = db.Column(db.Boolean, nullable=False)  # Quiz réussi ou non
+    
+    # Bonus éventuels
+    perfect_bonus_added = db.Column(db.Boolean, nullable=False, default=False)
+    combo_max = db.Column(db.Integer, nullable=False, default=0)  # Meilleur combo atteint
+    
+    # Statistiques d'utilisation du lien
+    view_count = db.Column(db.Integer, nullable=False, default=0)  # Nombre de vues
+    click_count = db.Column(db.Integer, nullable=False, default=0)  # Nombre de clics vers le quiz
+    last_viewed_at = db.Column(db.DateTime, nullable=True)
+    
+    # Plateforme de partage (optionnel pour statistiques)
+    platform = db.Column(db.String(20), nullable=True)  # facebook|twitter|native|copy
+    
+    def __repr__(self):
+        return f"<QuizShareLink uuid={self.uuid} quiz={self.quiz_rule_set_id} score={self.total_score}>"
+    
+    def is_expired(self):
+        """Vérifie si le lien a expiré."""
+        if self.expires_at is None:
+            return False
+        return datetime.utcnow() > self.expires_at
+    
+    def increment_view(self):
+        """Incrémente le compteur de vues."""
+        self.view_count += 1
+        self.last_viewed_at = datetime.utcnow()
+    
+    def increment_click(self):
+        """Incrémente le compteur de clics vers le quiz."""
+        self.click_count += 1
+    
+    def to_dict(self):
+        """Convertit l'objet en dictionnaire pour l'API."""
+        return {
+            'uuid': self.uuid,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'quiz_name': self.quiz_rule_set.name if self.quiz_rule_set else None,
+            'quiz_slug': self.quiz_rule_set.slug if self.quiz_rule_set else None,
+            'total_score': self.total_score,
+            'total_correct_answers': self.total_correct_answers,
+            'total_questions': self.total_questions,
+            'success': self.success,
+            'perfect_bonus_added': self.perfect_bonus_added,
+            'combo_max': self.combo_max,
+            'view_count': self.view_count,
+            'click_count': self.click_count,
+            'url': f'/share/{self.uuid}'
+        }
