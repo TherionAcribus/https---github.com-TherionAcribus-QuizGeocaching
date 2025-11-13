@@ -1,29 +1,35 @@
 {% extends "base_public.html" %}
 
-{% block title %}{{ user.username if user else 'Un joueur' }} a scoré {{ total_score }} points au quiz {{ rule_set.name }}{% endblock %}
+{% block title %}{% if user and user.username %}{{ user.username }}{% else %}Un joueur{% endif %} a scoré {{ total_score }} points au quiz {{ rule_set.name }}{% endblock %}
 
 {% block meta_tags %}
 <!-- Meta tags Open Graph optimisés pour le partage de résultats -->
-<meta name="description" content="{{ user.username if user else 'Un joueur' }} a obtenu {{ total_score }} points ({{ total_correct_answers }}/{{ total_questions }} bonnes réponses) au quiz {{ rule_set.name }}. Viens relever le défi !">
+{% set player_name = user.username if (user and user.username) else 'Un joueur' %}
+{% set success_emoji = '✅' if success else '💪' %}
+{% set status_text = 'a réussi' if success else 'a tenté' %}
+{% set perfect_text = ' (Quiz parfait ! 🏆)' if perfect_bonus_added else '' %}
+
+<meta name="description" content="{{ player_name }} a obtenu {{ total_score }} points ({{ total_correct_answers }}/{{ total_questions }} bonnes réponses) au quiz {{ rule_set.name }}. Viens relever le défi !">
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="CacheQuiz">
 <meta property="og:title" content="🎯 {{ total_score }} points au quiz {{ rule_set.name }} !">
-<meta property="og:description" content="{{ user.username if user else 'Un joueur' }} a réussi {% if success %}✅{% else %}💪{% endif %} avec {{ total_correct_answers }}/{{ total_questions }} bonnes réponses{% if perfect_bonus_added %} (Quiz parfait ! 🏆){% endif %}. Teste tes connaissances toi aussi !">
+<meta property="og:description" content="{{ player_name }} {{ status_text }} {{ success_emoji }} avec {{ total_correct_answers }}/{{ total_questions }} bonnes réponses{{ perfect_text }}. Teste tes connaissances toi aussi !">
 <meta property="og:url" content="{{ request.url }}">
-{% if rule_set.intro_image %}
+{% if rule_set and rule_set.intro_image %}
 <meta property="og:image" content="{{ request.url_root[:-1] }}{{ rule_set.intro_image.url }}">
 <meta property="og:image:alt" content="Quiz {{ rule_set.name }}">
 {% else %}
 <meta property="og:image" content="{{ request.url_root }}static/images/logo_geoquiz.png">
+<meta property="og:image:alt" content="CacheQuiz Logo">
 {% endif %}
 
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="🎯 {{ total_score }} points au quiz {{ rule_set.name }} !">
-<meta name="twitter:description" content="{{ user.username if user else 'Un joueur' }} : {{ total_correct_answers }}/{{ total_questions }} bonnes réponses{% if perfect_bonus_added %} (Parfait ! 🏆){% endif %}">
-{% if rule_set.intro_image %}
+<meta name="twitter:description" content="{{ player_name }} : {{ total_correct_answers }}/{{ total_questions }} bonnes réponses{{ perfect_text }}. Viens relever le défi !">
+{% if rule_set and rule_set.intro_image %}
 <meta name="twitter:image" content="{{ request.url_root[:-1] }}{{ rule_set.intro_image.url }}">
 {% else %}
 <meta name="twitter:image" content="{{ request.url_root }}static/images/logo_geoquiz.png">
