@@ -3898,6 +3898,19 @@ def cancel_quiz_session():
         return { 'error': str(e) }, 400
 
 
+def _parse_bool_param(value):
+    """Convertit un paramètre en booléen fiable."""
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        return value.strip().lower() in {"true", "1", "yes", "on"}
+    return False
+
+
 @app.route('/api/quiz/create-share-link', methods=['POST'])
 def create_quiz_share_link():
     """
@@ -3911,8 +3924,8 @@ def create_quiz_share_link():
         total_score = int(data.get('total_score', 0))
         total_correct_answers = int(data.get('total_correct_answers', 0))
         total_questions = int(data.get('total_questions', 0))
-        success = data.get('success', 'false').lower() == 'true'
-        perfect_bonus = data.get('perfect_bonus', 'false').lower() == 'true'
+        success = _parse_bool_param(data.get('success'))
+        perfect_bonus = _parse_bool_param(data.get('perfect_bonus'))
         combo_max = int(data.get('combo_max', 0))
         platform = (data.get('platform') or '').strip() or None
         
