@@ -1,5 +1,48 @@
 {% extends "base_public.html" %}
 
+{% block title %}{% if rule_set %}{{ rule_set.name }} - CacheQuiz{% else %}Choisir un Quiz - CacheQuiz{% endif %}{% endblock %}
+
+{% block meta_tags %}
+{% if rule_set %}
+<!-- Meta tags Open Graph pour le partage social -->
+<meta name="description" content="{% if rule_set.description %}{{ rule_set.description|striptags|truncate(160) }}{% else %}Teste tes connaissances avec le quiz {{ rule_set.name }}. Rejoins-moi et viens relever le défi !{% endif %}">
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="CacheQuiz">
+<meta property="og:title" content="Quiz : {{ rule_set.name }}">
+<meta property="og:description" content="{% if rule_set.description %}{{ rule_set.description|striptags|truncate(200) }}{% else %}Teste tes connaissances avec ce quiz de géocaching. Rejoins-moi et viens relever le défi !{% endif %}">
+<meta property="og:url" content="{{ request.url_root }}play/{{ rule_set.slug }}">
+{% if rule_set.intro_image %}
+<meta property="og:image" content="{{ request.url_root[:-1] }}{{ rule_set.intro_image.url }}">
+<meta property="og:image:alt" content="Image du quiz {{ rule_set.name }}">
+{% else %}
+<meta property="og:image" content="{{ request.url_root }}static/images/logo_geoquiz.png">
+<meta property="og:image:alt" content="CacheQuiz Logo">
+{% endif %}
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Quiz : {{ rule_set.name }}">
+<meta name="twitter:description" content="{% if rule_set.description %}{{ rule_set.description|striptags|truncate(200) }}{% else %}Teste tes connaissances avec ce quiz de géocaching !{% endif %}">
+{% if rule_set.intro_image %}
+<meta name="twitter:image" content="{{ request.url_root[:-1] }}{{ rule_set.intro_image.url }}">
+{% else %}
+<meta name="twitter:image" content="{{ request.url_root }}static/images/logo_geoquiz.png">
+{% endif %}
+{% else %}
+<!-- Meta tags par défaut -->
+<meta name="description" content="Choisis ton quiz de géocaching et teste tes connaissances. Différents thèmes et niveaux de difficulté disponibles !">
+<meta property="og:site_name" content="CacheQuiz">
+<meta property="og:type" content="website">
+<meta property="og:title" content="CacheQuiz - Quiz de Géocaching">
+<meta property="og:description" content="Choisis ton quiz de géocaching et teste tes connaissances. Différents thèmes et niveaux de difficulté disponibles !">
+<meta property="og:url" content="{{ request.url }}">
+<meta property="og:image" content="{{ request.url_root }}static/images/logo_geoquiz.png">
+<meta name="twitter:card" content="summary">
+{% endif %}
+{% endblock %}
+
 {% block content %}
 
 {% if rule_set %}

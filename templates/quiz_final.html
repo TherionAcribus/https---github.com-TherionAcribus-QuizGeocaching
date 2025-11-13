@@ -62,6 +62,73 @@
             {% endif %}
         </div>
 
+        <!-- Section de partage social -->
+        {% if rule_set %}
+        <div class="share-section" 
+             data-controller="share"
+             data-share-score-value="{{ total_score }}"
+             data-share-correct-answers-value="{{ total_correct_answers }}"
+             data-share-total-questions-value="{{ total_questions }}"
+             data-share-quiz-name-value="{{ rule_set.name }}"
+             data-share-quiz-slug-value="{{ rule_set.slug }}"
+             data-share-success-value="{{ 'true' if total_correct_answers >= rule_set.min_correct_answers_to_win else 'false' }}">
+            
+            <div class="share-header">
+                <span class="share-icon">🎯</span>
+                <h3 class="share-title">Partage ton score !</h3>
+                <p class="share-subtitle">Défie tes amis de faire mieux</p>
+            </div>
+
+            <div class="share-buttons">
+                <button type="button" 
+                        class="btn-share btn-share-facebook"
+                        data-action="click->share#shareOnFacebook"
+                        title="Le message sera copié, puis vous pourrez le coller sur Facebook">
+                    <svg class="share-icon-svg" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                    </svg>
+                    <span>Facebook</span>
+                    <span class="share-info-badge" title="Le message sera copié automatiquement">📋</span>
+                </button>
+
+                <button type="button" 
+                        class="btn-share btn-share-twitter"
+                        data-action="click->share#shareOnTwitter"
+                        title="Partager sur Twitter/X">
+                    <svg class="share-icon-svg" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    <span>Twitter</span>
+                </button>
+
+                <button type="button" 
+                        class="btn-share btn-share-native"
+                        data-action="click->share#shareNative"
+                        title="Partager via...">
+                    <svg class="share-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="18" cy="5" r="3"></circle>
+                        <circle cx="6" cy="12" r="3"></circle>
+                        <circle cx="18" cy="19" r="3"></circle>
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                    </svg>
+                    <span>Partager</span>
+                </button>
+
+                <button type="button" 
+                        class="btn-share btn-share-copy"
+                        data-action="click->share#copyToClipboard"
+                        title="Copier le lien">
+                    <svg class="share-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    <span>Copier</span>
+                </button>
+            </div>
+        </div>
+        {% endif %}
+
         {% if score_breakdown %}
         <details class="score-breakdown-card" id="score-breakdown-panel">
             <summary class="score-breakdown-summary">
@@ -267,5 +334,153 @@
         }
 
         .final-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+
+        /* Styles pour la section de partage social */
+        .share-section {
+            margin: 2rem 0;
+            padding: 2rem;
+            background: linear-gradient(135deg, rgba(15,118,110,0.08) 0%, rgba(99,102,241,0.08) 100%);
+            border: 2px solid rgba(15,118,110,0.2);
+            border-radius: 1rem;
+            text-align: center;
+        }
+
+        .share-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .share-icon {
+            display: inline-block;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .share-title {
+            margin: 0.5rem 0 0.25rem 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            background: linear-gradient(135deg, #0f766e 0%, #6366f1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .share-subtitle {
+            margin: 0;
+            color: var(--muted-color);
+            font-size: 0.95rem;
+        }
+
+        .share-buttons {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-share {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            border: 2px solid transparent;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .btn-share:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .btn-share:active {
+            transform: translateY(0);
+        }
+
+        .share-icon-svg {
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+
+        .share-info-badge {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            margin-left: 0.25rem;
+        }
+
+        .btn-share-facebook {
+            background: #1877f2;
+            color: white;
+        }
+
+        .btn-share-facebook:hover {
+            background: #0c63d4;
+        }
+
+        .btn-share-twitter {
+            background: #000000;
+            color: white;
+        }
+
+        .btn-share-twitter:hover {
+            background: #333333;
+        }
+
+        .btn-share-native {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-share-native:hover {
+            background: linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%);
+        }
+
+        .btn-share-copy {
+            background: var(--card-bg);
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-share-copy:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-success-flash {
+            background: #22c55e !important;
+            color: white !important;
+            border-color: #22c55e !important;
+        }
+
+        /* Responsive design pour mobile */
+        @media (max-width: 640px) {
+            .share-buttons {
+                flex-direction: column;
+            }
+
+            .btn-share {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .share-title {
+                font-size: 1.25rem;
+            }
+
+            .share-section {
+                padding: 1.5rem;
+            }
+        }
     </style>
 </div>

@@ -3486,6 +3486,38 @@ def play_quiz():
                            auto_start=auto_start)
 
 
+@app.route('/play/<slug>')
+def play_quiz_by_slug(slug):
+    """
+    Page pour jouer à un quiz spécifique via son slug.
+    Route propre pour partage sur réseaux sociaux: /play/<slug>
+    """
+    rule_set = QuizRuleSet.query.filter_by(slug=slug, is_active=True).first()
+    
+    if not rule_set:
+        # Redirection vers la page de sélection si le slug n'existe pas
+        return redirect(url_for('play_quiz'))
+    
+    # Récupérer tous les sets de règles actifs pour le sélecteur
+    rule_sets = QuizRuleSet.query.filter_by(is_active=True).order_by(QuizRuleSet.name).all()
+    
+    quick_double_click_pref = _get_user_double_click_preference()
+    if 'quick_double_click_enabled' in session:
+        quick_double_click_enabled = bool(session.get('quick_double_click_enabled'))
+    else:
+        quick_double_click_enabled = quick_double_click_pref
+        session['quick_double_click_enabled'] = quick_double_click_enabled
+    
+    # Auto-démarrage activé par défaut pour cette route
+    auto_start = True
+    
+    return render_template('play.html',
+                           rule_sets=rule_sets,
+                           rule_set=rule_set,
+                           quick_double_click=quick_double_click_enabled,
+                           auto_start=auto_start)
+
+
 @app.route('/api/quiz/next')
 def next_quiz_question():
     """Retourne la prochaine question du quiz en consommant une playlist pré-générée.

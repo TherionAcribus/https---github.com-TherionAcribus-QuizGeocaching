@@ -5,11 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}CacheQuiz{% endblock %}</title>
     
+    {% block meta_tags %}
+    <!-- Meta tags par défaut -->
+    <meta name="description" content="Application de Quiz Geocaching pour tester vos connaissances ou créer une Mystery.">
+    <meta property="og:site_name" content="CacheQuiz">
+    <meta property="og:type" content="website">
+    {% endblock %}
+    
     <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     
     <!-- Hyperscript -->
     <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
+    
+    <!-- Stimulus -->
+    <script type="importmap">
+    {
+        "imports": {
+            "@hotwired/stimulus": "https://unpkg.com/@hotwired/stimulus@3.2.2/dist/stimulus.js"
+        }
+    }
+    </script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
     
     <!-- CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
